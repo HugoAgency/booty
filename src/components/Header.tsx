@@ -2,20 +2,20 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { ShoppingBag, Menu, X, Shield, Sparkles, PhoneCall } from 'lucide-react';
+import { ShoppingBag, Menu, X, Shield, Sparkles } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
+import AnimatedLogo from './AnimatedLogo';
 
 export default function Header() {
   const { totalCount, setIsCartOpen } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-rose-100 shadow-sm transition-all">
-      {/* Top promotional bar */}
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-rose-100 shadow-xs transition-all">
+      {/* Top promotional bar (Jordan specific) */}
       <div className="bg-gradient-to-r from-brand-600 via-brand-primary to-rose-500 text-white text-xs sm:text-sm py-2 px-4 text-center font-medium flex items-center justify-center gap-2">
         <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-        <span>توصيل سريع ومجاني لجميع الطلبات في المملكة ودول الخليج | Free Express Delivery</span>
+        <span>توصيل سريع ومجاني لكافة محافظات المملكة الأردنية الهاشمية والدفع عند الاستلام | Free Express Delivery across Jordan</span>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,19 +32,9 @@ export default function Header() {
             </button>
           </div>
 
-          {/* Logo brand */}
+          {/* Animated Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="relative w-36 sm:w-44 h-12 transition-transform duration-300 group-hover:scale-105">
-                <Image
-                  src="/images/logo.jpg"
-                  alt="THE BOOTY REPUBLIC"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-            </Link>
+            <AnimatedLogo width={220} height={60} />
           </div>
 
           {/* Desktop Navigation Links */}

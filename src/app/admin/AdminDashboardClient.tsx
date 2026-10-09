@@ -16,6 +16,7 @@ import {
 import AdminStatsTab from '@/components/admin/AdminStatsTab';
 import AdminOrdersTab from '@/components/admin/AdminOrdersTab';
 import AdminProductsTab from '@/components/admin/AdminProductsTab';
+import AnimatedLogo from '@/components/AnimatedLogo';
 
 export default function AdminDashboardClient({ user }: { user: { username: string; name: string } }) {
   const router = useRouter();
@@ -37,16 +38,9 @@ export default function AdminDashboardClient({ user }: { user: { username: strin
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-2xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center gap-4">
-            <Link href="/" className="relative w-36 h-10">
-              <Image
-                src="/images/logo.jpg"
-                alt="THE BOOTY REPUBLIC"
-                fill
-                className="object-contain"
-              />
-            </Link>
+            <AnimatedLogo width={180} height={48} />
             <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-brand-soft text-brand-700 font-bold text-xs border border-rose-100">
-              لوحة التحكم الإدارية
+              لوحة التحكم الإدارية (الأردن)
             </span>
           </div>
 

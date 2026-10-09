@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Shield, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
+import AnimatedLogo from '@/components/AnimatedLogo';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -41,18 +42,12 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-rose-50/40 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-3xl border border-rose-100 shadow-2xl p-8 space-y-6">
         <div className="text-center space-y-3">
-          <div className="relative w-40 h-12 mx-auto">
-            <Image
-              src="/images/logo.jpg"
-              alt="THE BOOTY REPUBLIC"
-              fill
-              className="object-contain"
-              priority
-            />
+          <div className="flex justify-center">
+            <AnimatedLogo width={220} height={58} />
           </div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-brand-700 text-xs font-bold border border-rose-100">
             <Shield className="w-3.5 h-3.5" />
-            <span>بوابة إدارة النظام / Admin Portal</span>
+            <span>بوابة إدارة النظام (الأردن) / Jordan Admin</span>
           </div>
           <h1 className="text-xl font-black text-gray-900">تسجيل دخول المسؤول</h1>
         </div>

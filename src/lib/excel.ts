@@ -23,12 +23,12 @@ export interface OrderExportRecord {
 
 export async function generateOrdersExcelWorkbook(orders: OrderExportRecord[]): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'THE BOOTY REPUBLIC';
+  workbook.creator = 'THE BOOTY REPUBLIC Jordan';
   workbook.lastModifiedBy = 'THE BOOTY REPUBLIC Admin';
   workbook.created = new Date();
   workbook.modified = new Date();
 
-  const worksheet = workbook.addWorksheet('طلبات العملاء - Orders', {
+  const worksheet = workbook.addWorksheet('طلبات الأردن - Jordan Orders', {
     views: [{ state: 'normal', rightToLeft: true }],
     pageSetup: { paperSize: 9, orientation: 'landscape' },
   });
@@ -40,14 +40,14 @@ export async function generateOrdersExcelWorkbook(orders: OrderExportRecord[]): 
     { header: 'اسم العميل / Customer Name', key: 'customerName', width: 25 },
     { header: 'رقم الهاتف / Phone Number', key: 'customerPhone', width: 18 },
     { header: 'البريد الإلكتروني / Email', key: 'customerEmail', width: 25 },
-    { header: 'المدينة / City', key: 'city', width: 16 },
+    { header: 'المدينة / المحافظة / City', key: 'city', width: 18 },
     { header: 'عنوان التوصيل / Delivery Address', key: 'address', width: 35 },
     { header: 'المنتجات / Product Names', key: 'productNames', width: 35 },
     { header: 'أكواد المنتجات / SKUs', key: 'productSkus', width: 22 },
     { header: 'الكميات / Quantities', key: 'quantities', width: 15 },
-    { header: 'أسعار الوحدة / Unit Prices', key: 'unitPrices', width: 20 },
-    { header: 'إجمالي الأصناف / Line Totals', key: 'lineTotals', width: 20 },
-    { header: 'إجمالي الطلب / Order Total (SAR)', key: 'orderTotal', width: 22 },
+    { header: 'أسعار الوحدة (د.أ) / Unit Prices', key: 'unitPrices', width: 20 },
+    { header: 'إجمالي الأصناف (د.أ) / Line Totals', key: 'lineTotals', width: 20 },
+    { header: 'إجمالي الطلب / Order Total (JOD)', key: 'orderTotal', width: 22 },
     { header: 'ملاحظات العميل / Customer Notes', key: 'notes', width: 30 },
     { header: 'حالة الطلب / Order Status', key: 'status', width: 18 },
   ];
@@ -103,14 +103,14 @@ export async function generateOrdersExcelWorkbook(orders: OrderExportRecord[]): 
       .join('\n');
 
     const unitPricesStr = order.items
-      .map((it) => `${it.unitPrice.toFixed(2)} SAR`)
+      .map((it) => `${it.unitPrice.toFixed(2)} JOD`)
       .join('\n');
 
     const lineTotalsStr = order.items
-      .map((it) => `${it.lineTotal.toFixed(2)} SAR`)
+      .map((it) => `${it.lineTotal.toFixed(2)} JOD`)
       .join('\n');
 
-    const formattedDate = new Intl.DateTimeFormat('ar-SA', {
+    const formattedDate = new Intl.DateTimeFormat('ar-JO', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -164,7 +164,7 @@ export async function generateOrdersExcelWorkbook(orders: OrderExportRecord[]): 
         cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
       } else if (colNumber === 13) {
         cell.alignment = { vertical: 'middle', horizontal: 'right', wrapText: true };
-        cell.numFmt = '#,##0.00 "SAR"';
+        cell.numFmt = '#,##0.00 "JOD"';
       } else {
         cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
       }

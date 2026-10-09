@@ -11,10 +11,8 @@ import {
   Truck,
   ShoppingBag,
   CreditCard,
-  Lock,
   AlertCircle,
   ArrowRight,
-  ArrowLeft,
   CheckCircle2,
 } from 'lucide-react';
 
@@ -26,7 +24,7 @@ export default function CheckoutPage() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
-  const [city, setCity] = useState('الرياض');
+  const [city, setCity] = useState('عمّان (العاصمة)');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -35,46 +33,42 @@ export default function CheckoutPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
 
-  // Generate unique idempotency key per checkout attempt session
   useEffect(() => {
     setIdempotencyKey(`checkout_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
   }, []);
 
-  const citiesList = [
-    'الرياض',
-    'جدة',
-    'مكة المكرمة',
-    'المدينة المنورة',
-    'الدمام',
-    'الخبر',
-    'الظهران',
-    'الأحساء',
-    'القصيم (بريدة / عنيزة)',
-    'تبوك',
-    'أبها وخميس مشيط',
-    'الطائف',
-    'حائل',
-    'جازان',
-    'نجران',
-    'الجبيل',
-    'مدينة أخرى بالمملكة',
+  const jordanCitiesList = [
+    'عمّان (العاصمة)',
+    'إربد',
+    'الزرقاء',
+    'العقبة',
+    'السلط / البلقاء',
+    'مادبا',
+    'جرش',
+    'عجلون',
+    'المفرق',
+    'الكرك',
+    'الطفيلة',
+    'معان',
+    'لواء الرمثا',
+    'الأغوار / الشونة',
+    'منطقة أخرى في الأردن',
   ];
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    // Basic frontend checks
     if (!customerName.trim() || customerName.trim().length < 2) {
-      setErrorMessage('يرجى إدخال اسم العميل بشكل صحيح (حرفين على الأقل)');
+      setErrorMessage('يرجى إدخال اسم المستلم بشكل صحيح (حرفين على الأقل)');
       return;
     }
     if (!customerPhone.trim() || customerPhone.trim().length < 8) {
-      setErrorMessage('يرجى إدخال رقم هاتف صالح للتواصل والتوصيل');
+      setErrorMessage('يرجى إدخال رقم هاتف أردني صالح للتواصل والتوصيل');
       return;
     }
     if (!address.trim() || address.trim().length < 5) {
-      setErrorMessage('يرجى كتابة عنوان التوصيل بالتفصيل (الحي، الشارع، المعالم)');
+      setErrorMessage('يرجى كتابة عنوان التوصيل بالتفصيل (المنطقة، الشارع، المعالم القريبة)');
       return;
     }
     if (items.length === 0) {
@@ -113,7 +107,6 @@ export default function CheckoutPage() {
         throw new Error(data.error || 'فشلت معالجة الطلب، يرجى مراجعة البيانات والمحاولة مجدداً');
       }
 
-      // Order created successfully! Clear cart & redirect
       clearCart();
       router.push(`/checkout/success?orderNumber=${encodeURIComponent(data.orderNumber)}`);
     } catch (err: any) {
@@ -131,7 +124,7 @@ export default function CheckoutPage() {
         </div>
         <h2 className="text-2xl font-bold text-gray-900">سلة المشتريات فارغة</h2>
         <p className="text-sm text-gray-500 max-w-md">
-          لم تقومي بإضافة أي منتجات للسلة بعد. استكشفي تشكيلتنا الفاخرة وأضيفي ما يناسبكِ.
+          لم تقومي بإضافة أي منتجات للسلة بعد. استكشفي تشكيلتنا الفاخرة في الأردن وأضيفي ما يناسبكِ.
         </p>
         <Link
           href="/#products"
@@ -154,11 +147,14 @@ export default function CheckoutPage() {
             <ArrowRight className="w-4 h-4 rtl:rotate-0 rotate-180" />
             <span>العودة للتسوق</span>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
-            إتمام الطلب / Checkout
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
+              إتمام الطلب في الأردن / Checkout
+            </h1>
+            <span className="text-base">🇯🇴</span>
+          </div>
           <p className="text-xs sm:text-sm text-gray-500">
-            يرجى إدخال بيانات التوصيل بدقة لضمان وصول شحنتكِ بأسرع وقت
+            توصيل مباشر لكافة محافظات المملكة الأردنية الهاشمية والدفع نقداً عند الاستلام
           </p>
         </div>
 
@@ -178,7 +174,7 @@ export default function CheckoutPage() {
                   <span className="w-7 h-7 rounded-full bg-brand-soft text-brand-600 flex items-center justify-center text-xs font-black">
                     1
                   </span>
-                  <span>بيانات المستلم وعنوان التوصيل</span>
+                  <span>بيانات المستلم وعنوان التوصيل (الأردن)</span>
                 </h2>
               </div>
 
@@ -193,14 +189,14 @@ export default function CheckoutPage() {
                     required
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="مثال: سارة أحمد العتيبي"
+                    placeholder="مثال: رنا خالد المجالي"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                    رقم الجوال / الهاتف <span className="text-red-500">*</span>
+                    رقم الهاتف / الخلوي <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
@@ -208,7 +204,7 @@ export default function CheckoutPage() {
                     dir="ltr"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="+966 5X XXX XXXX"
+                    placeholder="+962 7X XXX XXXX"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition text-right"
                   />
                 </div>
@@ -225,21 +221,21 @@ export default function CheckoutPage() {
                     dir="ltr"
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    placeholder="sara@example.com"
+                    placeholder="rana@example.com"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition text-right"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                    المدينة <span className="text-red-500">*</span>
+                    المحافظة / المدينة <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition bg-white"
                   >
-                    {citiesList.map((c) => (
+                    {jordanCitiesList.map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>
@@ -258,7 +254,7 @@ export default function CheckoutPage() {
                   rows={2}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="اسم الحي، الشارع، رقم المبنى أو أي معلم قريب..."
+                  placeholder="اسم الحي أو المنطقة، الشارع، رقم البناية، المعالم القريبة..."
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition"
                 />
               </div>
@@ -272,7 +268,7 @@ export default function CheckoutPage() {
                   type="text"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="مثال: يرجى الاتصال قبل الوصول بنصف ساعة"
+                  placeholder="مثال: يرجى الاتصال قبل موعد الوصول للتنسيق"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition"
                 />
               </div>
@@ -283,15 +279,15 @@ export default function CheckoutPage() {
                   <span className="w-7 h-7 rounded-full bg-brand-soft text-brand-600 flex items-center justify-center text-xs font-black">
                     2
                   </span>
-                  <span>طريقة الدفع</span>
+                  <span>طريقة الدفع (الدينار الأردني)</span>
                 </h3>
 
                 <div className="p-4 rounded-2xl border-2 border-brand-500 bg-brand-soft/30 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 rounded-full border-4 border-brand-600 bg-white" />
                     <div>
-                      <h4 className="text-sm font-bold text-gray-900">الدفع عند الاستلام (Cash on Delivery)</h4>
-                      <p className="text-xs text-gray-500">ادفعي نقداً أو بالشبكة عند وصول المندوب لباب منزلكِ</p>
+                      <h4 className="text-sm font-bold text-gray-900">الدفع عند الاستلام بالدينار الأردني (Cash on Delivery)</h4>
+                      <p className="text-xs text-gray-500">ادفعي نقداً لمندوب التوصيل عند استلام الطلب وفحصه</p>
                     </div>
                   </div>
                   <ShieldCheck className="w-5 h-5 text-emerald-600" />
@@ -316,13 +312,13 @@ export default function CheckoutPage() {
                     </div>
                   ) : (
                     <>
-                      <span>تأكيد وإرسال الطلب الآن ({formatPrice(subtotal)})</span>
+                      <span>تأكيد وإرسال الطلب ({formatPrice(subtotal)})</span>
                       <CheckCircle2 className="w-5 h-5" />
                     </>
                   )}
                 </button>
                 <p className="text-center text-[11px] text-gray-400 mt-2">
-                  🔒 بياناتكِ آمنة ومشفرة بالكامل وفق أعلى معايير الخصوصية
+                  🔒 بياناتكِ آمنة ومشفرة بالكامل - خدمة التوصيل متوفرة لكافة محافظات الأردن
                 </p>
               </div>
             </form>
@@ -368,8 +364,8 @@ export default function CheckoutPage() {
                 <span className="font-semibold text-gray-800">{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between text-emerald-600 font-medium">
-                <span>رسوم التوصيل:</span>
-                <span>مجاناً (عرض اليوم)</span>
+                <span>رسوم التوصيل بالأردن:</span>
+                <span>مجاناً (عرض ترويجي)</span>
               </div>
               <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-rose-100">
                 <span>المبلغ الإجمالي المستحق:</span>
@@ -380,10 +376,10 @@ export default function CheckoutPage() {
             <div className="p-3.5 bg-rose-50/70 rounded-xl border border-rose-100 text-xs text-gray-600 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-brand-700">
                 <Truck className="w-4 h-4" />
-                <span>شحن وتوصيل مباشر لباب منزلكِ</span>
+                <span>توصيل سريع لكافة المحافظات الأردنية</span>
               </div>
               <p className="text-[11px] text-gray-500">
-                سيصلكِ اتصال تأكيدي من فريق الشحن بعد إتمام الطلب لتحديد وقت التسليم المناسب.
+                سيصلكِ اتصال من مندوب التوصيل لتأكيد الموعد الدقيق فور خروج الشحنة.
               </p>
             </div>
           </div>

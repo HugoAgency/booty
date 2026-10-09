@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { generateOrderNumber } from '../src/lib/order-service';
 import { formatPrice } from '../src/lib/currency';
 
-describe('Order Service Business Logic', () => {
+describe('Order Service Business Logic (Jordan / JOD)', () => {
   it('generates unique valid order numbers in TBR format', () => {
     const orderNum1 = generateOrderNumber();
     const orderNum2 = generateOrderNumber();
@@ -12,18 +12,18 @@ describe('Order Service Business Logic', () => {
     expect(orderNum1).not.toBe(orderNum2);
   });
 
-  it('formats currency correctly in Arabic and English', () => {
-    expect(formatPrice(180)).toBe('180.00 ر.س');
-    expect(formatPrice(180, 'ar')).toBe('180.00 ر.س');
-    expect(formatPrice(180, 'en')).toBe('180.00 SAR');
-    expect(formatPrice(145.5)).toBe('145.50 ر.س');
+  it('formats currency correctly in Jordanian Dinar (د.أ / JOD)', () => {
+    expect(formatPrice(35)).toBe('35.00 د.أ');
+    expect(formatPrice(35, 'ar')).toBe('35.00 د.أ');
+    expect(formatPrice(35, 'en')).toBe('35.00 JOD');
+    expect(formatPrice(28.5)).toBe('28.50 د.أ');
   });
 
-  it('calculates line item totals accurately without floating precision drift', () => {
+  it('calculates line item totals accurately in JOD without floating precision drift', () => {
     const items = [
-      { unitPrice: 180.0, quantity: 2 },
-      { unitPrice: 145.0, quantity: 1 },
-      { unitPrice: 195.0, quantity: 3 },
+      { unitPrice: 35.0, quantity: 2 },
+      { unitPrice: 28.0, quantity: 1 },
+      { unitPrice: 38.0, quantity: 3 },
     ];
 
     const subtotal = items.reduce(
@@ -31,9 +31,9 @@ describe('Order Service Business Logic', () => {
       0
     );
 
-    expect(subtotal).toBe(1090.0);
+    expect(subtotal).toBe(212.0);
     const shipping = 0;
     const total = Number((subtotal + shipping).toFixed(2));
-    expect(total).toBe(1090.0);
+    expect(total).toBe(212.0);
   });
 });

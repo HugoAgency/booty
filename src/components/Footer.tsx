@@ -1,7 +1,8 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Instagram, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
+import { Mail, Phone, MapPin, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
+import AnimatedLogo from './AnimatedLogo';
 
 export default function Footer() {
   return (
@@ -10,23 +11,18 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           {/* Brand Info */}
           <div className="space-y-4">
-            <div className="relative w-44 h-12">
-              <Image
-                src="/images/logo-pink.jpg"
-                alt="THE BOOTY REPUBLIC"
-                fill
-                className="object-contain rounded-lg"
-              />
+            <div className="bg-white/95 p-2 rounded-2xl inline-block shadow-md">
+              <AnimatedLogo width={190} height={52} />
             </div>
             <p className="text-sm text-rose-100/70 leading-relaxed">
-              علامة تجارية متخصصة في مستحضرات العناية الفاخرة بالبشرة والقوام، نبتكر تركيبات متقدمة تدعم جمالكِ الطبيعي وثقتكِ الدائمة.
+              علامة تجارية متخصصة في مستحضرات العناية الفاخرة بالبشرة والقوام، نوفر تركيباتنا الأصلية حصرياً في المملكة الأردنية الهاشمية.
             </p>
             <div className="flex items-center gap-3 text-rose-300">
               <span className="text-xs bg-rose-900/50 px-2.5 py-1 rounded-md border border-rose-800/40">
                 منتجات أصلية 100%
               </span>
               <span className="text-xs bg-rose-900/50 px-2.5 py-1 rounded-md border border-rose-800/40">
-                مصرحة ومعتمدة
+                خدمة الأردن فقط
               </span>
             </div>
           </div>
@@ -73,15 +69,15 @@ export default function Footer() {
             <ul className="space-y-3 text-xs text-rose-100/80">
               <li className="flex items-start gap-2">
                 <Truck className="w-4 h-4 text-brand-primary shrink-0 mt-0.5" />
-                <span>توصيل مجاني لجميع مناطق ومدن المملكة خلال 2 - 4 أيام عمل.</span>
+                <span>توصيل سريع ومجاني لكافة محافظات المملكة الأردنية الهاشمية (عمّان، إربد، الزرقاء، العقبة، وكافة المدن) خلال 24 - 48 ساعة.</span>
               </li>
               <li className="flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>دفع آمن عند الاستلام، وفحص الشحنة قبل الاستلام.</span>
+                <span>دفع آمن عند الاستلام بالدينار الأردني (Cash on Delivery).</span>
               </li>
               <li className="flex items-start gap-2">
                 <RefreshCw className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                <span>ضمان الجودة مع سياسة استبدال مرنة وسريعة.</span>
+                <span>ضمان الجودة مع فحص المنتجات قبل الاستلام.</span>
               </li>
             </ul>
           </div>
@@ -89,20 +85,20 @@ export default function Footer() {
           {/* Contact */}
           <div className="space-y-3">
             <h4 className="text-base font-bold text-white tracking-wide border-b border-rose-900/50 pb-2">
-              خدمة العملاء / Customer Support
+              خدمة العملاء في الأردن / Support
             </h4>
             <div className="space-y-2 text-sm text-rose-100/70">
               <p className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-brand-primary" />
-                <span>المملكة العربية السعودية، الرياض</span>
+                <MapPin className="w-4 h-4 text-brand-primary shrink-0" />
+                <span>المملكة الأردنية الهاشمية، عمّان</span>
               </p>
               <p className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-brand-primary" />
-                <span dir="ltr">+966 50 123 4567</span>
+                <Phone className="w-4 h-4 text-brand-primary shrink-0" />
+                <span dir="ltr">+962 7 9123 4567</span>
               </p>
               <p className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-brand-primary" />
-                <span>care@thebootyrepublic.com</span>
+                <Mail className="w-4 h-4 text-brand-primary shrink-0" />
+                <span>jordan@thebootyrepublic.com</span>
               </p>
             </div>
           </div>
@@ -110,11 +106,11 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-rose-900/40 flex flex-col sm:flex-row items-center justify-between text-xs text-rose-200/50 gap-4">
-          <p>© {new Date().getFullYear()} THE BOOTY REPUBLIC. جميع الحقوق محفوظة.</p>
+          <p>© {new Date().getFullYear()} THE BOOTY REPUBLIC Jordan. جميع الحقوق محفوظة للمملكة الأردنية الهاشمية.</p>
           <div className="flex items-center gap-4">
-            <span>الدفع عند الاستلام متاح</span>
+            <span>الدفع عند الاستلام بالدينار الأردني (JOD)</span>
             <span>•</span>
-            <span>الأسعار تشمل ضريبة القيمة المضافة</span>
+            <span>الأسعار شاملة الضريبة</span>
           </div>
         </div>
       </div>

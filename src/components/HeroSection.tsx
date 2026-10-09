@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Sparkles, ShieldCheck, Truck, ArrowLeft, Heart } from 'lucide-react';
+import AnimatedLogo from './AnimatedLogo';
 
 export default function HeroSection() {
   return (
@@ -16,9 +17,13 @@ export default function HeroSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Text Column */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-right">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-100/80 border border-brand-200 text-brand-700 text-xs sm:text-sm font-bold shadow-2xs">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-100/80 border border-brand-200 text-brand-700 text-xs sm:text-sm font-bold shadow-2xs">
               <Sparkles className="w-4 h-4 text-brand-600 animate-spin-slow" />
-              <span>العلامة الفاخرة الأولى للعناية بالقوام والبشرة الحساسة</span>
+              <span>المتجر الحصري في المملكة الأردنية الهاشمية 🇯🇴</span>
+            </div>
+
+            <div className="pt-2">
+              <AnimatedLogo width={320} height={85} className="mx-auto lg:mr-0 mb-4" />
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-gray-900 leading-tight">
@@ -29,7 +34,7 @@ export default function HeroSection() {
             </h1>
 
             <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-              مجموعتنا العلاجية والتجميلية المبتكرة صممت خصيصاً لتمنحكِ عناية فائقة، تفتيحاً متطوراً للمناطق الحساسة، تنقية عميقة للمسام، ولوشن الببتيد المكثف لشد وصقل القوام وتنعيم السيلوليت.
+              مجموعتنا العلاجية والتجميلية المبتكرة متوفرة الآن في الأردن لتمنحكِ عناية فائقة، تفتيحاً متطوراً للمناطق الحساسة، تنقية عميقة للمسام، ولوشن الببتيد المكثف لشد وصقل القوام وتنعيم السيلوليت.
             </p>
 
             {/* CTAs */}
@@ -38,7 +43,7 @@ export default function HeroSection() {
                 href="#products"
                 className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-brand-600 via-brand-primary to-rose-600 text-white font-extrabold rounded-2xl shadow-xl shadow-rose-200 hover:shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 group text-base"
               >
-                <span>تسوقي المجموعة الآن</span>
+                <span>تسوقي المجموعة بالدينار الأردني</span>
                 <ArrowLeft className="w-5 h-5 rtl:group-hover:-translate-x-1 ltr:group-hover:translate-x-1 transition-transform" />
               </a>
 
@@ -71,9 +76,9 @@ export default function HeroSection() {
               <div className="flex flex-col items-center lg:items-start text-center lg:text-right">
                 <div className="flex items-center gap-1.5 text-brand-600 font-bold text-sm">
                   <Truck className="w-4 h-4 text-blue-500" />
-                  <span>شحن سريع</span>
+                  <span>توصيل الأردن</span>
                 </div>
-                <span className="text-[11px] text-gray-500">دفع عند الاستلام متاح</span>
+                <span className="text-[11px] text-gray-500">دفع عند الاستلام بالدينار</span>
               </div>
             </div>
           </div>
@@ -95,13 +100,13 @@ export default function HeroSection() {
                 <div className="mt-5 bg-white/90 backdrop-blur-md p-4 rounded-xl border border-rose-100 flex items-center justify-between shadow-xs">
                   <div>
                     <span className="text-[11px] font-bold text-brand-600 uppercase tracking-wider">
-                      المنتج الأكثر طلباً
+                      المنتج الأكثر طلباً في الأردن
                     </span>
                     <h4 className="text-sm font-bold text-gray-900">جل تفتيح المناطق الحساسة</h4>
                     <span className="text-xs text-gray-500">Advanced Brightening Gel</span>
                   </div>
-                  <div className="text-left font-black text-brand-700 text-base">
-                    180.00 ر.س
+                  <div className="text-left font-black text-brand-700 text-lg">
+                    35.00 د.أ
                   </div>
                 </div>
               </div>
