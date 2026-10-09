@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrderStatus {
+  NEW
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+model Product {
+  id             String      @id @default(cuid())
+  slug           String      @unique
+  name           String
+  nameAr         String
+  subtitle       String?
+  subtitleAr     String?
+  description    String
+  descriptionAr  String
+  price          Float
+  compareAtPrice Float?
+  sku            String      @unique
+  image          String
+  size           String?
+  category       String
+  categoryAr     String
+  stock          Int         @default(50)
+  isActive       Boolean     @default(true)
+  isFeatured     Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  orderItems     OrderItem[]
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  orderNumber    String      @unique
+  idempotencyKey String?     @unique
+  customerName   String
+  customerPhone  String
+  customerEmail  String?
+  city           String
+  address        String
+  notes          String?
+  subtotal       Float
+  shippingFee    Float       @default(0.0)
+  totalAmount    Float
+  status         OrderStatus @default(NEW)
+  paymentMethod  String      @default("CASH_ON_DELIVERY")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  items          OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([customerPhone])
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  productId     String?
+  productName   String
+  productNameAr String?
+  productSku    String?
+  unitPrice     Float
+  quantity      Int
+  lineTotal     Float
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
