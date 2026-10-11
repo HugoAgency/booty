@@ -13,8 +13,9 @@ import {
   ShieldAlert,
   Calculator,
 } from 'lucide-react';
-import { ShippingRules, calculateShippingFee } from '@/lib/shipping-service';
+import { ShippingRules, calculateShippingFee } from '@/lib/shipping-rules';
 import { formatPrice } from '@/lib/currency';
+import { ShippingConfigSchema } from '@/lib/validations';
 
 interface AdminShippingTabProps {
   userRole?: string;
@@ -27,6 +28,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [invalidField, setInvalidField] = useState<string | null>(null);
 
   // Form State
   const [isFreeShippingPromo, setIsFreeShippingPromo] = useState(false);
@@ -70,7 +72,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isReadOnly) return;
+    if (isReadOnly || saving) return;
 
     setSaving(true);
     setError(null);
@@ -85,6 +87,16 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
         outerGovernoratesFee: Number(outerGovernoratesFee),
         estimatedDeliveryTime: estimatedDeliveryTime.trim(),
       };
+      const parsed = ShippingConfigSchema.safeParse(payload);
+      if (!parsed.success) {
+        const issue = parsed.error.issues[0];
+        const field = String(issue.path[0]);
+        setInvalidField(field);
+        setError(issue.message.split('/')[0].trim());
+        document.getElementById(`shipping-${field}`)?.focus();
+        return;
+      }
+      setInvalidField(null);
 
       const res = await fetch('/api/admin/settings/shipping', {
         method: 'PUT',
@@ -98,6 +110,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
       }
 
       setMessage('تم حفظ وتحديث قواعد ورسوم التوصيل بنجاح في متجر الأردن');
+      window.dispatchEvent(new Event('shipping-rules-updated'));
       setTimeout(() => setMessage(null), 4000);
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء الحفظ');
@@ -121,14 +134,14 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
     <div className="space-y-6">
       {/* Messages */}
       {message && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
+        <div role="status" className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
           <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{message}</span>
         </div>
       )}
 
       {error && (
-        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
+        <div id="shipping-error" role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
           <span>{error}</span>
         </div>
@@ -158,7 +171,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Settings Form */}
         <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-gray-200 shadow-2xs space-y-6">
-          <form onSubmit={handleSave} className="space-y-6">
+          <form noValidate onSubmit={handleSave} className="space-y-6">
             {/* Global Promotion Card */}
             <div
               className={`p-4 rounded-2xl border transition-all ${
@@ -183,6 +196,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
                 <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
                   <input
                     type="checkbox"
+                    aria-label="توصيل مجاني شامل"
                     disabled={isReadOnly}
                     checked={isFreeShippingPromo}
                     onChange={(e) => setIsFreeShippingPromo(e.target.checked)}
@@ -202,7 +216,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                  <label htmlFor="shipping-freeShippingThreshold" className="block text-xs font-bold text-gray-700 mb-1">
                     الحد الأدنى للطلب للتوصيل المجاني (د.أ)
                   </label>
                   <input
@@ -211,6 +225,9 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
                     min="0"
                     disabled={isReadOnly}
                     required
+                    id="shipping-freeShippingThreshold"
+                    aria-invalid={invalidField === 'freeShippingThreshold'}
+                    aria-describedby={invalidField === 'freeShippingThreshold' ? 'shipping-error' : undefined}
                     value={freeShippingThreshold}
                     onChange={(e) => setFreeShippingThreshold(Number(e.target.value))}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -221,7 +238,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                  <label htmlFor="shipping-ammanFee" className="block text-xs font-bold text-gray-700 mb-1">
                     رسوم التوصيل داخل عمّان (د.أ)
                   </label>
                   <input
@@ -230,6 +247,9 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
                     min="0"
                     disabled={isReadOnly}
                     required
+                    id="shipping-ammanFee"
+                    aria-invalid={invalidField === 'ammanFee'}
+                    aria-describedby={invalidField === 'ammanFee' ? 'shipping-error' : undefined}
                     value={ammanFee}
                     onChange={(e) => setAmmanFee(Number(e.target.value))}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -242,7 +262,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                  <label htmlFor="shipping-outerGovernoratesFee" className="block text-xs font-bold text-gray-700 mb-1">
                     رسوم التوصيل لباقي المحافظات (د.أ)
                   </label>
                   <input
@@ -251,6 +271,9 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
                     min="0"
                     disabled={isReadOnly}
                     required
+                    id="shipping-outerGovernoratesFee"
+                    aria-invalid={invalidField === 'outerGovernoratesFee'}
+                    aria-describedby={invalidField === 'outerGovernoratesFee' ? 'shipping-error' : undefined}
                     value={outerGovernoratesFee}
                     onChange={(e) => setOuterGovernoratesFee(Number(e.target.value))}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -261,7 +284,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">
+                  <label htmlFor="shipping-standardFee" className="block text-xs font-bold text-gray-700 mb-1">
                     الرسوم الافتراضية العامة (د.أ)
                   </label>
                   <input
@@ -270,6 +293,9 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
                     min="0"
                     disabled={isReadOnly}
                     required
+                    id="shipping-standardFee"
+                    aria-invalid={invalidField === 'standardFee'}
+                    aria-describedby={invalidField === 'standardFee' ? 'shipping-error' : undefined}
                     value={standardFee}
                     onChange={(e) => setStandardFee(Number(e.target.value))}
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -281,7 +307,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label htmlFor="shipping-estimatedDeliveryTime" className="block text-xs font-bold text-gray-700 mb-1">
                   مدة التوصيل المعروضة للزبائن
                 </label>
                 <div className="relative">
@@ -290,6 +316,9 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
                     type="text"
                     disabled={isReadOnly}
                     required
+                    id="shipping-estimatedDeliveryTime"
+                    aria-invalid={invalidField === 'estimatedDeliveryTime'}
+                    aria-describedby={invalidField === 'estimatedDeliveryTime' ? 'shipping-error' : undefined}
                     value={estimatedDeliveryTime}
                     onChange={(e) => setEstimatedDeliveryTime(e.target.value)}
                     placeholder="مثال: 1 - 3 أيام عمل"

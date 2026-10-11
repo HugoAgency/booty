@@ -5,6 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
+import { useShipping } from '@/context/ShippingContext';
+import ShippingInfo from '@/components/ShippingInfo';
+import { CheckoutPayloadSchema } from '@/lib/validations';
 import { formatPrice } from '@/lib/currency';
 import {
   ShieldCheck,
@@ -17,10 +20,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 import {
-  ShippingRules,
-  DEFAULT_SHIPPING_RULES,
   calculateShippingFee,
-} from '@/lib/shipping-service';
+} from '@/lib/shipping-rules';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -37,24 +38,16 @@ export default function CheckoutPage() {
   // Execution state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [invalidField, setInvalidField] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
-  const [shippingRules, setShippingRules] = useState<ShippingRules>(DEFAULT_SHIPPING_RULES);
+  const { rules: shippingRules, loading: shippingLoading, refresh: refreshShipping } = useShipping();
 
   useEffect(() => {
     setIdempotencyKey(`checkout_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
-
-    fetch('/api/shipping/rules')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.rules) {
-          setShippingRules(data.rules);
-        }
-      })
-      .catch((err) => console.error('Error fetching shipping rules:', err));
   }, []);
 
-  const shippingCalc = calculateShippingFee(subtotal, city, shippingRules);
-  const finalTotalAmount = Number((subtotal + shippingCalc.fee).toFixed(2));
+  const shippingCalc = shippingRules && !shippingLoading ? calculateShippingFee(subtotal, city, shippingRules) : null;
+  const finalTotalAmount = shippingCalc ? Number((subtotal + shippingCalc.fee).toFixed(2)) : null;
 
   const jordanCitiesList = [
     'عمّان (العاصمة)',
@@ -76,29 +69,10 @@ export default function CheckoutPage() {
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting || shippingLoading || !shippingRules || !shippingCalc) return;
     setErrorMessage(null);
 
-    if (!customerName.trim() || customerName.trim().length < 2) {
-      setErrorMessage('يرجى إدخال اسم المستلم بشكل صحيح (حرفين على الأقل)');
-      return;
-    }
-    if (!customerPhone.trim() || customerPhone.trim().length < 8) {
-      setErrorMessage('يرجى إدخال رقم هاتف أردني صالح للتواصل والتوصيل');
-      return;
-    }
-    if (!address.trim() || address.trim().length < 5) {
-      setErrorMessage('يرجى كتابة عنوان التوصيل بالتفصيل (المنطقة، الشارع، المعالم القريبة)');
-      return;
-    }
-    if (items.length === 0) {
-      setErrorMessage('سلة التسوق فارغة، يرجى إضافة منتجات أولاً');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const payload = {
+    const payload = {
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         customerEmail: customerEmail.trim() || undefined,
@@ -112,6 +86,26 @@ export default function CheckoutPage() {
         idempotencyKey,
       };
 
+    const parsed = CheckoutPayloadSchema.safeParse(payload);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const field = String(issue.path[0]);
+      setInvalidField(field);
+      setErrorMessage(issue.message.split('/')[0].trim());
+      document.getElementById(`checkout-${field}`)?.focus();
+      return;
+    }
+    setInvalidField(null);
+
+    setIsSubmitting(true);
+
+    try {
+      const currentRules = await refreshShipping();
+      if (!currentRules) throw new Error('تعذر التحقق من رسوم التوصيل. أعيدي المحاولة قبل إرسال الطلب.');
+      if (calculateShippingFee(subtotal, city, currentRules).fee !== shippingCalc.fee) {
+        setErrorMessage('تحدّثت رسوم التوصيل. راجعي المبلغ الجديد ثم أكّدي الطلب مرة أخرى.');
+        return;
+      }
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
@@ -131,6 +125,7 @@ export default function CheckoutPage() {
     } catch (err: any) {
       console.error(err);
       setErrorMessage(err.message || 'حدث خطأ غير متوقع أثناء إرسال الطلب');
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -178,7 +173,7 @@ export default function CheckoutPage() {
         </div>
 
         {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center gap-3 text-sm">
+          <div id="checkout-error" role="alert" className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 flex items-center gap-3 text-sm">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -187,7 +182,7 @@ export default function CheckoutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Customer Details Form */}
           <div className="lg:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-rose-100 shadow-sm space-y-6">
-            <form onSubmit={handleSubmitOrder} className="space-y-5">
+            <form noValidate onSubmit={handleSubmitOrder} className="space-y-5">
               <div className="border-b border-rose-100 pb-4">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                   <span className="w-7 h-7 rounded-full bg-brand-soft text-brand-600 flex items-center justify-center text-xs font-black">
@@ -200,12 +195,15 @@ export default function CheckoutPage() {
               {/* Name & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label htmlFor="checkout-customerName" className="block text-xs font-bold text-gray-700 mb-1.5">
                     الاسم الكامل <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
+                    id="checkout-customerName"
+                    aria-invalid={invalidField === 'customerName'}
+                    aria-describedby={invalidField === 'customerName' ? 'checkout-error' : undefined}
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="مثال: رنا خالد المجالي"
@@ -214,13 +212,16 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label htmlFor="checkout-customerPhone" className="block text-xs font-bold text-gray-700 mb-1.5">
                     رقم الهاتف / الخلوي <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="tel"
                     required
                     dir="ltr"
+                    id="checkout-customerPhone"
+                    aria-invalid={invalidField === 'customerPhone'}
+                    aria-describedby={invalidField === 'customerPhone' ? 'checkout-error' : undefined}
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     placeholder="+962 7X XXX XXXX"
@@ -232,12 +233,15 @@ export default function CheckoutPage() {
               {/* Email & City */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label htmlFor="checkout-customerEmail" className="block text-xs font-bold text-gray-700 mb-1.5">
                     البريد الإلكتروني <span className="text-gray-400 font-normal">(اختياري)</span>
                   </label>
                   <input
                     type="email"
                     dir="ltr"
+                    id="checkout-customerEmail"
+                    aria-invalid={invalidField === 'customerEmail'}
+                    aria-describedby={invalidField === 'customerEmail' ? 'checkout-error' : undefined}
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     placeholder="rana@example.com"
@@ -246,10 +250,13 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  <label htmlFor="checkout-city" className="block text-xs font-bold text-gray-700 mb-1.5">
                     المحافظة / المدينة <span className="text-red-500">*</span>
                   </label>
                   <select
+                    id="checkout-city"
+                    aria-invalid={invalidField === 'city'}
+                    aria-describedby={invalidField === 'city' ? 'checkout-error' : undefined}
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition bg-white"
@@ -265,27 +272,33 @@ export default function CheckoutPage() {
 
               {/* Address */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label htmlFor="checkout-address" className="block text-xs font-bold text-gray-700 mb-1.5">
                   عنوان التوصيل بالتفصيل <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   required
                   rows={2}
-                  value={address}
+                  id="checkout-address"
+                    aria-invalid={invalidField === 'address'}
+                    aria-describedby={invalidField === 'address' ? 'checkout-error' : undefined}
+                    value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="اسم الحي أو المنطقة، الشارع، رقم البناية، المعالم القريبة..."
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition"
+                  className="resize-none w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition"
                 />
               </div>
 
               {/* Notes */}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                <label htmlFor="checkout-notes" className="block text-xs font-bold text-gray-700 mb-1.5">
                   ملاحظات إضافية للتوصيل <span className="text-gray-400 font-normal">(اختياري)</span>
                 </label>
                 <input
                   type="text"
-                  value={notes}
+                  id="checkout-notes"
+                    aria-invalid={invalidField === 'notes'}
+                    aria-describedby={invalidField === 'notes' ? 'checkout-error' : undefined}
+                    value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="مثال: يرجى الاتصال قبل موعد الوصول للتنسيق"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition"
@@ -317,7 +330,7 @@ export default function CheckoutPage() {
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || shippingLoading || !shippingRules}
                   className={`w-full py-4 px-6 rounded-2xl font-black text-base text-white flex items-center justify-center gap-2 shadow-xl transition-all ${
                     isSubmitting
                       ? 'bg-gray-400 cursor-wait'
@@ -331,7 +344,7 @@ export default function CheckoutPage() {
                     </div>
                   ) : (
                     <>
-                      <span>تأكيد وإرسال الطلب ({formatPrice(finalTotalAmount)})</span>
+                      <span>{finalTotalAmount === null ? 'بانتظار بيانات التوصيل' : `تأكيد وإرسال الطلب (${formatPrice(finalTotalAmount)})`}</span>
                       <CheckCircle2 className="w-5 h-5" />
                     </>
                   )}
@@ -378,7 +391,7 @@ export default function CheckoutPage() {
             </div>
 
             {/* Free Shipping Motivator Progress Bar */}
-            {!shippingCalc.isFree && shippingCalc.amountNeededForFreeShipping > 0 && (
+            {shippingCalc && shippingRules && !shippingCalc.isFree && shippingCalc.amountNeededForFreeShipping > 0 && (
               <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl text-xs space-y-1.5">
                 <div className="flex items-center justify-between font-bold text-amber-900">
                   <span className="flex items-center gap-1.5">
@@ -411,18 +424,18 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">رسوم التوصيل ({city}):</span>
-                {shippingCalc.isFree ? (
+                {!shippingCalc || !shippingRules ? <span>بانتظار بيانات التوصيل</span> : shippingCalc.isFree ? (
                   <span className="text-emerald-600 font-bold flex items-center gap-1">
                     <span>مجاناً (0.00 د.أ)</span>
                     {shippingCalc.reason === 'PROMO' ? (
                       <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
                         عرض ترويجي
                       </span>
-                    ) : (
+                    ) : shippingCalc.reason === 'THRESHOLD' ? (
                       <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
-                        فوق {formatPrice(shippingRules.freeShippingThreshold)}
+                        من {formatPrice(shippingRules.freeShippingThreshold)}
                       </span>
-                    )}
+                    ) : null}
                   </span>
                 ) : (
                   <span className="font-bold text-gray-900 font-mono">
@@ -433,14 +446,14 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-rose-100">
                 <span>المبلغ الإجمالي المستحق:</span>
-                <span className="text-brand-600 text-lg">{formatPrice(finalTotalAmount)}</span>
+                <span className="text-brand-600 text-lg">{finalTotalAmount === null ? 'بانتظار بيانات التوصيل' : formatPrice(finalTotalAmount)}</span>
               </div>
             </div>
 
             <div className="p-3.5 bg-rose-50/70 rounded-xl border border-rose-100 text-xs text-gray-600 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-brand-700">
                 <Truck className="w-4 h-4" />
-                <span>توصيل سريع ({shippingRules.estimatedDeliveryTime || '1 - 3 أيام عمل'})</span>
+                <ShippingInfo subtotal={subtotal} />
               </div>
               <p className="text-[11px] text-gray-500">
                 الدفع عند الاستلام (كاش) - سيصلكِ اتصال من المندوب لتأكيد الموعد عند خروج الشحنة.

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/currency';
+import ShippingInfo from './ShippingInfo';
 
 export default function CartDrawer() {
   const { items, isCartOpen, setIsCartOpen, removeItem, updateQuantity, subtotal, totalCount } = useCart();
@@ -130,12 +131,9 @@ export default function CartDrawer() {
                   <span>المجموع الفرعي / Subtotal:</span>
                   <span className="font-semibold text-gray-900">{formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-emerald-600 font-medium">
-                  <span>الشحن والتوصيل / Shipping:</span>
-                  <span>مجاناً / Free</span>
-                </div>
+                <ShippingInfo subtotal={subtotal} className="text-gray-600 text-xs space-y-1" />
                 <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-rose-50">
-                  <span>الإجمالي النهائي / Total:</span>
+                  <span>الإجمالي قبل رسوم التوصيل:</span>
                   <span className="text-brand-600 text-lg">{formatPrice(subtotal)}</span>
                 </div>
               </div>

@@ -6,6 +6,7 @@ import { getProductBySlug, getActiveProducts } from '@/lib/products';
 import ProductDetailClient from './ProductDetailClient';
 import { ArrowRight, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
+import ShippingInfo from '@/components/ShippingInfo';
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const product = await getProductBySlug(params.slug);
@@ -56,8 +57,8 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-gray-900">شحن مجاني وسريع</h4>
-              <p className="text-xs text-gray-500">توصيل لباب المنزل في 2 - 4 أيام عمل</p>
+              <h4 className="text-sm font-bold text-gray-900">التوصيل في الأردن</h4>
+              <ShippingInfo showFees className="text-xs text-gray-600 space-y-1" />
             </div>
           </div>
 

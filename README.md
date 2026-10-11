@@ -235,6 +235,16 @@ npm test
 
 ## 10. Product Bundles & Live Storefront Data
 
+Delivery messages on product pages, cart, header, footer and FAQ use the saved
+ShippingConfig through one public shipping provider. Checkout uses the same rules;
+changing delivery time, city fees, free-delivery minimum or promotional delivery in
+the admin panel updates the display on navigation/reload, focus and periodic refresh.
+The current admin tab refreshes immediately after a successful save. Delivery fees
+are never advertised as universally free unless the stored rules make them free.
+Failed reads show retry feedback instead of quoting default fees; checkout waits for
+current rules and reconfirms a changed delivery amount before sending the order.
+Initial default rules apply only when no ShippingConfig record has been created.
+
 In **إدارة المنتجات والمخزون**, choose **إضافة منتج / بكج**, then **بكج منتجات**.
 Give the bundle its own Arabic/English name, SKU, image and full price. Select at least
 two different standalone products and specify 1–50 units of each. Bundles cannot

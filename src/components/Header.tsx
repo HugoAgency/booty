@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ShoppingBag, Menu, X, Sparkles } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import AnimatedLogo from './AnimatedLogo';
+import ShippingInfo from './ShippingInfo';
 
 export default function Header() {
   const { totalCount, setIsCartOpen } = useCart();
@@ -15,7 +16,7 @@ export default function Header() {
       {/* Top promotional bar (Jordan specific) */}
       <div className="bg-gradient-to-r from-brand-600 via-brand-primary to-rose-500 text-white text-xs sm:text-sm py-2 px-4 text-center font-medium flex items-center justify-center gap-2">
         <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-        <span>توصيل سريع ومجاني لكافة محافظات المملكة الأردنية الهاشمية والدفع عند الاستلام | Free Express Delivery across Jordan</span>
+        <ShippingInfo showTime={false} />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

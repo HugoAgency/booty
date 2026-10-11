@@ -3,6 +3,17 @@
 Visual intent is maintained in [DESIGN.md](DESIGN.md). This records the bundle
 workflow and owners; unrelated legacy screens have not been migrated by this feature.
 
+ShippingProvider owns public delivery state across the persistent application shell.
+ShippingInfo owns delivery text in the header, footer, FAQ, cart and product page;
+checkout uses the same provider and pure fee calculation. Data is revalidated on route
+changes, window focus, reconnect, visibility changes and once per minute while visible.
+Successful administrator saves trigger immediate revalidation in the current tab.
+In-flight reads are cancelled, timeout after ten seconds and cannot overwrite newer
+responses. Missing settings data shows loading/error with retry; checkout cannot submit
+until actual rules are available. It rechecks fees before submitting and asks customers
+to confirm again if the total changes. The server still calculates the final amount.
+Without a selected city, cart totals explicitly exclude delivery fees.
+
 ## Business evidence
 
 | Concern | Source | UI consequence |
@@ -11,7 +22,7 @@ workflow and owners; unrelated legacy screens have not been migrated by this fea
 | Pricing and stock | README §7 and `src/lib/order-service.ts` | Server calculates prices and atomically reserves stock. |
 | Bundle purpose | User request: multiple products in one item | One named product, one administrator-set price and one cart/order line. |
 | Components | `ProductInputSchema` and `validateBundleInput` | Two or more different single products, integer quantities, no nested bundles. |
-| Shipping | `src/lib/shipping-service.ts` | Existing order subtotal and shipping rules apply unchanged. |
+| Shipping | `ShippingConfig`, `src/lib/shipping-service.ts`, `src/lib/shipping-rules.ts` | All delivery copy and calculations use administrator-saved rules; no hardcoded promise of free shipping or delivery time. |
 | Lifecycle | Existing product APIs | Deactivation is soft; deactivated components make dependent bundles unavailable. |
 | Historical fulfillment | `OrderItem.bundleContents` | Order details and Excel use the saved composition, not current catalog contents. |
 | Homepage product | `getFeaturedProduct` and `getActiveProducts` | Current names, images and prices; popularity uses non-cancelled orders and no demo fallback. |
@@ -20,7 +31,7 @@ workflow and owners; unrelated legacy screens have not been migrated by this fea
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
-| Form | ProductEditor and ProductInputSchema for catalog | ProductInputSchema and bundle-service | create / edit / bundle | validation tests and browser create/edit/error |
+| Form | ProductEditor; AdminShippingTab; checkout form | ProductInputSchema, ShippingConfigSchema, CheckoutPayloadSchema | catalog / shipping settings / checkout | validation tests and browser create/edit/error/focus |
 | Scrollbar | Global application stylesheet | DESIGN.md and globals.css | bounded component list / dialog | static audit and narrow viewport |
 | Toast | Catalog status region in AdminProductsTab | Successful catalog mutation | persistent success or retryable error | browser success/error |
 | CRUD | Product APIs and ProductEditor | ProductInputSchema, bundle-service and rbac | create / edit / activate | API and browser CRUD checks |

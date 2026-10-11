@@ -4,6 +4,7 @@ import { CartProvider } from '@/context/CartContext';
 import CartDrawer from '@/components/CartDrawer';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { ShippingProvider } from '@/context/ShippingContext';
 
 export const metadata: Metadata = {
   title: 'THE BOOTY REPUBLIC | العلامة الفاخرة للعناية بالقوام والبشرة',
@@ -34,12 +35,12 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen flex flex-col font-sans">
-        <CartProvider>
+        <ShippingProvider><CartProvider>
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
           <CartDrawer />
-        </CartProvider>
+        </CartProvider></ShippingProvider>
       </body>
     </html>
   );

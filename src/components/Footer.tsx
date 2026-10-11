@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Mail, Phone, MapPin, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
 import AnimatedLogo from './AnimatedLogo';
+import ShippingInfo from './ShippingInfo';
 
 export default function Footer() {
   return (
@@ -64,7 +65,7 @@ export default function Footer() {
             <ul className="space-y-3 text-xs text-rose-100/80">
               <li className="flex items-start gap-2">
                 <Truck className="w-4 h-4 text-brand-primary shrink-0 mt-0.5" />
-                <span>توصيل سريع ومجاني لكافة محافظات المملكة الأردنية الهاشمية (عمّان، إربد، الزرقاء، العقبة، وكافة المدن) خلال 24 - 48 ساعة.</span>
+                <ShippingInfo showFees />
               </li>
               <li className="flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, HelpCircle } from 'lucide-react';
+import ShippingInfo from './ShippingInfo';
 
 export default function FaqSection() {
   const faqs = [
@@ -15,7 +16,7 @@ export default function FaqSection() {
     },
     {
       q: 'ما هي طرق الدفع المتاحة وكيف تتم عملية الشحن؟',
-      a: 'ندعم حالياً الدفع عند الاستلام (Cash on Delivery) لتوفير أقصى درجات الراحة والأمان لكِ، بالإضافة إلى التوصيل السريع والمجاني لجميع محافظات المملكة الأردنية الهاشمية.',
+      a: <><p>ندعم الدفع عند الاستلام والتوصيل لجميع محافظات الأردن.</p><ShippingInfo showFees /></>,
     },
     {
       q: 'كيف يمكنني تتبع طلبي بعد إتمامه؟',

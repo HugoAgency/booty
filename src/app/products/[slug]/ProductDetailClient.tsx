@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ProductItem } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/currency';
+import ShippingInfo from '@/components/ShippingInfo';
 import { ShoppingBag, Check, Plus, Minus, Heart, Sparkles, Tag, CheckCircle } from 'lucide-react';
 
 export default function ProductDetailClient({ product }: { product: ProductItem }) {
@@ -72,7 +73,7 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
         </div>
 
         {/* Pricing */}
-        <div className="flex items-baseline gap-3 p-4 bg-brand-soft/50 rounded-2xl border border-rose-100">
+        <div className="flex flex-wrap items-baseline gap-3 p-4 bg-brand-soft/50 rounded-2xl border border-rose-100">
           <span className="text-3xl font-extrabold text-brand-600">
             {formatPrice(product.price)}
           </span>
@@ -81,9 +82,7 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
               {formatPrice(product.compareAtPrice)}
             </span>
           )}
-          <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200">
-            السعر يشمل الضريبة والشحن المجاني
-          </span>
+          <ShippingInfo subtotal={product.price * quantity} showTime={false} className="text-xs text-gray-700 w-full" />
         </div>
 
         {product.isBundle && <section className="rounded-2xl border border-rose-200 bg-brand-soft p-4 space-y-3" aria-labelledby="bundle-contents-title">

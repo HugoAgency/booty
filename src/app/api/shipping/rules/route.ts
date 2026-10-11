@@ -9,7 +9,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       rules,
-    });
+    }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error: any) {
     console.error('Error fetching shipping rules:', error);
     return NextResponse.json(
