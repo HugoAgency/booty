@@ -3,6 +3,12 @@
 Visual intent is maintained in [DESIGN.md](DESIGN.md). This records the bundle
 workflow and owners; unrelated legacy screens have not been migrated by this feature.
 
+InstagramLink owns external account navigation in both the homepage promotion and
+the footer. Its destination comes from the owner's provided account link, recorded
+once in `src/lib/social.ts`. It preserves the account spelling, opens a new tab with
+noopener/noreferrer, announces that behavior and does not load an Instagram embed.
+The homepage collage uses current catalog images without extra data requests.
+
 ShippingProvider owns public delivery state across the persistent application shell.
 ShippingInfo owns delivery text in the header, footer, FAQ, cart and product page;
 checkout uses the same provider and pure fee calculation. Data is revalidated on route

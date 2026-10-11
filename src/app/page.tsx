@@ -3,6 +3,7 @@ import HeroSection from '@/components/HeroSection';
 import ProductCatalog from '@/components/ProductCatalog';
 import BrandFeatures from '@/components/BrandFeatures';
 import FaqSection from '@/components/FaqSection';
+import InstagramSection from '@/components/InstagramSection';
 import { getActiveProducts, getFeaturedProduct } from '@/lib/products';
 
 export const dynamic = 'force-dynamic'; // Every request reads current catalog and sales.
@@ -17,6 +18,7 @@ export default async function HomePage() {
       <ProductCatalog products={products} />
       <BrandFeatures />
       <FaqSection />
+      <InstagramSection products={products} />
     </div>
   );
 }

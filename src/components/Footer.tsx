@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Mail, Phone, MapPin, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
 import AnimatedLogo from './AnimatedLogo';
 import ShippingInfo from './ShippingInfo';
+import InstagramLink from './InstagramLink';
 
 export default function Footer() {
   return (
@@ -84,6 +85,7 @@ export default function Footer() {
               خدمة العملاء في الأردن / Support
             </h4>
             <div className="space-y-2 text-sm text-rose-100/70">
+              <InstagramLink compact />
               <p className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-brand-primary shrink-0" />
                 <span>المملكة الأردنية الهاشمية، عمّان</span>

@@ -97,6 +97,13 @@ hover. Storefront bundle badges and component lists appear before cart actions.
 No new animation is introduced. Product buttons keep visible focus and disabled
 states. Currency follows the existing `formatPrice` helper.
 
+The Instagram section closes the homepage with a rose-and-peach product collage:
+three slightly tilted frames use actual catalog imagery alongside an oversized,
+quiet Instagram outline. Arabic copy leads; the account handle uses LTR isolation.
+InstagramLink owns the follow action and a compact footer variant, with the same
+account URL and visible keyboard focus. Both open a new tab. Keep the palette and
+font stack unchanged; these are store images, not a simulated Instagram feed.
+
 ## Do's and Don'ts
 
 - Show the full bundle price and the quantity of every component.
