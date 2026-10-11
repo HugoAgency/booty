@@ -5,10 +5,10 @@ describe('CheckoutPayloadSchema Validation', () => {
   it('validates a correct checkout payload', () => {
     const validData = {
       customerName: 'سارة أحمد',
-      customerPhone: '+966501234567',
+      customerPhone: '+962790385333',
       customerEmail: 'sara@example.com',
-      city: 'الرياض',
-      address: 'حي النرجس، شارع أنس بن مالك',
+      city: 'عمّان',
+      address: 'شارع المدينة المنورة، عمّان',
       notes: 'يرجى الاتصال قبل الوصول',
       items: [
         { productId: 'prod_1', quantity: 2 },
@@ -24,9 +24,9 @@ describe('CheckoutPayloadSchema Validation', () => {
   it('fails if customer name is too short', () => {
     const invalid = {
       customerName: 'A',
-      customerPhone: '+966501234567',
-      city: 'جدة',
-      address: 'طريق الملك عبد العزيز',
+      customerPhone: '+962790385333',
+      city: 'إربد',
+      address: 'شارع الجامعة، إربد',
       items: [{ productId: 'prod_1', quantity: 1 }],
     };
     const parsed = CheckoutPayloadSchema.safeParse(invalid);
@@ -36,9 +36,9 @@ describe('CheckoutPayloadSchema Validation', () => {
   it('fails if items array is empty', () => {
     const invalid = {
       customerName: 'فاطمة محمد',
-      customerPhone: '+966551234567',
-      city: 'الدمام',
-      address: 'شارع الخليج العربي',
+      customerPhone: '+962790385333',
+      city: 'الزرقاء',
+      address: 'شارع الجيش، الزرقاء',
       items: [],
     };
     const parsed = CheckoutPayloadSchema.safeParse(invalid);
@@ -48,9 +48,9 @@ describe('CheckoutPayloadSchema Validation', () => {
   it('fails if quantity is less than 1', () => {
     const invalid = {
       customerName: 'نورة خالد',
-      customerPhone: '+966551234567',
-      city: 'مكة المكرمة',
-      address: 'حي العوالي',
+      customerPhone: '+962790385333',
+      city: 'العقبة',
+      address: 'شارع الكورنيش، العقبة',
       items: [{ productId: 'prod_1', quantity: 0 }],
     };
     const parsed = CheckoutPayloadSchema.safeParse(invalid);

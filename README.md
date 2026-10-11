@@ -82,7 +82,7 @@ The platform embodies the visual identity of **THE BOOTY REPUBLIC**:
 │   │   └── CartContext.tsx         # Shopping cart state with localStorage persistence
 │   ├── lib/
 │   │   ├── auth.ts                 # JWT session helpers
-│   │   ├── currency.ts             # SAR currency formatting
+│   │   ├── currency.ts             # JOD currency formatting
 │   │   ├── excel.ts                # Excel generator with Arabic RTL layout
 │   │   ├── order-service.ts        # Order validation, pricing & transaction handling
 │   │   ├── prisma.ts               # Prisma singleton client
@@ -182,7 +182,7 @@ The exported `.xlsx` workbook features:
   10. `الكميات / Quantities`
   11. `أسعار الوحدة / Unit Prices`
   12. `إجمالي الأصناف / Line Totals`
-  13. `إجمالي الطلب / Order Total (SAR)` (Formatted numeric currency)
+  13. `إجمالي الطلب / Order Total (JOD)` (Formatted numeric currency)
   14. `ملاحظات العميل / Customer Notes`
   15. `حالة الطلب / Order Status` (Localized status)
 
