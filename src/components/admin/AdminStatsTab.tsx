@@ -127,7 +127,7 @@ export default function AdminStatsTab({
                 <div className="text-left space-y-0.5">
                   <div className="font-bold text-gray-900">{formatPrice(order.totalAmount)}</div>
                   <span className="text-[10px] text-gray-400">
-                    {new Date(order.createdAt).toLocaleDateString('ar-SA')}
+                    {new Date(order.createdAt).toLocaleDateString('ar-JO')}
                   </span>
                 </div>
               </div>

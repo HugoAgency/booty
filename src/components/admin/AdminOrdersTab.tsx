@@ -268,7 +268,7 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
                       {o.orderNumber}
                     </td>
                     <td className="p-3.5 text-gray-500 whitespace-nowrap">
-                      {new Date(o.createdAt).toLocaleString('ar-SA', {
+                      {new Date(o.createdAt).toLocaleString('ar-JO', {
                         month: 'numeric',
                         day: 'numeric',
                         hour: '2-digit',

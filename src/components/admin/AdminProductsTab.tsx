@@ -343,7 +343,7 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-gray-700 mb-1">السعر (ر.س)</label>
+                  <label className="block font-bold text-gray-700 mb-1">السعر (د.أ)</label>
                   <input
                     type="number"
                     step="0.01"
