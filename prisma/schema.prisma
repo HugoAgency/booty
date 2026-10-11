@@ -33,9 +33,24 @@ model Product {
   stock          Int         @default(50)
   isActive       Boolean     @default(true)
   isFeatured     Boolean     @default(true)
+  isBundle       Boolean     @default(false)
+  bundleItems    BundleItem[] @relation("BundleComponents")
+  includedInBundles BundleItem[] @relation("ComponentProduct")
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   orderItems     OrderItem[]
+}
+
+model BundleItem {
+  id        String  @id @default(cuid())
+  bundleId  String
+  productId String
+  quantity  Int
+  bundle    Product @relation("BundleComponents", fields: [bundleId], references: [id], onDelete: Cascade)
+  product   Product @relation("ComponentProduct", fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([bundleId, productId])
+  @@index([productId])
 }
 
 model Order {
@@ -72,6 +87,7 @@ model OrderItem {
   unitPrice     Float
   quantity      Int
   lineTotal     Float
+  bundleContents Json?
   order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 

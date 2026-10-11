@@ -10,7 +10,7 @@ import { ShoppingBag, Check, Plus, Minus, Heart, Sparkles, Tag, CheckCircle } fr
 
 export default function ProductDetailClient({ product }: { product: ProductItem }) {
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, isReady } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'benefits' | 'howTo' | 'ingredients'>('benefits');
   const [isAdded, setIsAdded] = useState(false);
@@ -86,11 +86,22 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
           </span>
         </div>
 
+        {product.isBundle && <section className="rounded-2xl border border-rose-200 bg-brand-soft p-4 space-y-3" aria-labelledby="bundle-contents-title">
+          <h2 id="bundle-contents-title" className="font-bold text-brand-dark">محتويات البكج</h2>
+          <ul className="space-y-2 text-sm text-gray-700">
+            {product.bundleItems?.map(item => <li key={item.productId} className="flex items-center gap-3">
+              <Image src={item.product.image} alt="" width={40} height={40} className="rounded-lg object-contain" />
+              <span>{item.quantity} × {item.product.nameAr || item.product.name}</span>
+            </li>)}
+          </ul>
+          <p className="text-xs text-gray-600">السعر للبكج كاملًا ويُضاف إلى السلة كسلعة واحدة.</p>
+        </section>}
+
         {/* Stock Status */}
         <div className="flex items-center gap-2 text-xs font-bold">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-emerald-700">
-            متوفر في المخزون جاهز للشحن الفوري ({product.stock} قطعة متاحة)
+            {product.stock > 0 ? `متوفر في المخزون (${product.stock} ${product.isBundle ? 'بكج' : 'قطعة'} متاحة)` : 'نفد المخزون حاليًا'}
           </span>
         </div>
 
@@ -126,7 +137,8 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
             <button
               type="button"
               onClick={handleAddToCart}
-              className={`w-full py-4 px-6 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition-all ${
+              disabled={product.stock <= 0 || !isReady}
+              className={`w-full py-4 px-6 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                 isAdded
                   ? 'bg-emerald-600 text-white shadow-emerald-200'
                   : 'bg-gradient-to-r from-brand-600 via-brand-primary to-rose-600 text-white shadow-rose-200 hover:opacity-95 hover:shadow-xl'
@@ -148,7 +160,8 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
             <button
               type="button"
               onClick={handleBuyNow}
-              className="w-full py-4 px-6 rounded-2xl font-bold text-sm sm:text-base bg-brand-dark text-white hover:bg-gray-800 shadow-md transition-all flex items-center justify-center gap-2"
+              disabled={product.stock <= 0 || !isReady}
+              className="w-full py-4 px-6 rounded-2xl font-bold text-sm sm:text-base bg-brand-dark text-white hover:bg-gray-800 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5 text-brand-secondary" />
               <span>شراء فوري / Buy Now</span>

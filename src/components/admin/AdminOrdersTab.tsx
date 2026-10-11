@@ -380,6 +380,11 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
                       <p className="font-bold text-gray-900">
                         {item.productNameAr || item.productName}
                       </p>
+                      {item.bundleContents && <ul className="mt-1 space-y-1 text-xs text-gray-600" aria-label="مكونات البكج في الطلب">
+                        {item.bundleContents.map(component => <li key={component.productId}>
+                          {component.productNameAr || component.productName} · {component.productSku} × {component.quantity * item.quantity}
+                        </li>)}
+                      </ul>}
                       <p className="text-[11px] text-gray-400 font-mono">
                         SKU: {item.productSku || '-'} | الكمية: {item.quantity}
                       </p>

@@ -232,3 +232,75 @@ npm test
 * `tests/validations.test.ts`: Zod schema validations for customer details, quantities, phone numbers, and admin login.
 * `tests/order-service.test.ts`: Format verification for order numbers (`TBR-YYMMDD-XXXX`), currency formatting, and arithmetic precision.
 * `tests/excel.test.ts`: XLSX workbook generation, Arabic RTL sheet verification, column integrity, and cell data accuracy.
+
+## 10. Product Bundles & Live Storefront Data
+
+In **إدارة المنتجات والمخزون**, choose **إضافة منتج / بكج**, then **بكج منتجات**.
+Give the bundle its own Arabic/English name, SKU, image and full price. Select at least
+two different standalone products and specify 1–50 units of each. Bundles cannot
+contain another bundle or themselves. ADMIN and SUPER_ADMIN can save bundles;
+SUPPORT retains read-only access.
+
+A bundle is one cart and order item. Its available stock is calculated from its
+components: `min(floor(component.stock / component.quantity))`. It has no separate
+stock adjustment. Checkout combines demand from all bundles and standalone products,
+then creates the order and conditionally decrements component inventory in one
+serializable transaction. An insufficient or concurrent order cannot leave negative
+stock. Idempotent retries do not decrement inventory twice.
+
+Order items save the original bundle composition. Order details and XLSX exports show
+the component names, SKUs and total quantities to fulfill, even after a catalog edit.
+
+The home-page card now reads the current database name, subtitle, image, price and
+detail link. It selects the most ordered active item across non-cancelled orders.
+Before any orders exist it uses an administrator-featured item (or the first active
+item) and labels it as featured. Home and detail pages read fresh database data on
+each request. An empty or unreachable database no longer displays fake purchasable
+products; an empty catalog or retryable error is shown instead.
+
+### Schema update
+
+Use the same `DATABASE_URL` for Prisma, the application and the admin portal.
+After pulling this change, synchronize the development schema and generate the client:
+
+```bash
+npm ci
+npm run db:push
+```
+
+The schema adds `Product.isBundle`, `BundleItem` and nullable
+`OrderItem.bundleContents`; existing standalone products default to `isBundle=false`.
+Docker's existing entrypoint also runs the schema sync before startup. Review schema
+changes and back up an existing production database using the existing deployment
+process. No extra bundle seed or inventory reset is required.
+
+### Verification
+
+`npm test` runs catalog/hero and bundle validation tests. PostgreSQL integration tests
+opt in through a dedicated database whose name contains `bundle_test`; both variables
+must refer to that database. The six database tests skip when opt-in is absent.
+
+```bash
+export DATABASE_URL='postgresql://postgres@127.0.0.1:5432/booty_bundle_test?schema=public'
+export BUNDLE_TEST_DATABASE_URL="$DATABASE_URL"
+npm run db:push
+npm test -- --maxWorkers=2 --minWorkers=1
+npx tsc --noEmit --incremental false
+```
+
+For the browser checks, start the application with the same test database on port 3100.
+The test creates and deletes only its own fixtures. It verifies create/edit, validation,
+failed-save recovery, pending submission, dirty cancellation, keyboard focus, a phone
+viewport, cart, real checkout, permissions, and immediate homepage data changes.
+It signs short-lived test sessions with the application's `JWT_SECRET`; preserve any
+injected value and never print it. Playwright may be installed outside the checkout:
+
+```bash
+npm install --prefix /tmp/booty-browser playwright --no-audit --no-fund
+PLAYWRIGHT_MODULE_PATH=/tmp/booty-browser/node_modules/playwright \
+  node tests/browser/bundles.cjs
+```
+
+Set `CHROMIUM_PATH` if Chromium is not at `/usr/bin/chromium`, and
+`BUNDLE_TEST_BASE_URL` if the test server uses another address. Stop the development
+server before running `npm run build`; both commands use `.next`.

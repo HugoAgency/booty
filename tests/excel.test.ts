@@ -3,6 +3,24 @@ import { generateOrdersExcelWorkbook, OrderExportRecord } from '../src/lib/excel
 import ExcelJS from 'exceljs';
 
 describe('Excel Generation Service (Jordan / JOD)', () => {
+  it('exports saved bundle contents with total fulfillment quantities', async () => {
+    const buffer = await generateOrdersExcelWorkbook([{
+      orderNumber: 'BUNDLE-EXPORT', createdAt: new Date(), customerName: 'Test', customerPhone: '0790000000',
+      city: 'Amman', address: 'Test address', status: 'NEW', totalAmount: 78,
+      items: [{ productName: 'Care bundle', productNameAr: 'بكج العناية', productSku: 'PACK', quantity: 2,
+        unitPrice: 39, lineTotal: 78, bundleContents: [
+          { productId: 'gel', productName: 'Original Gel', productNameAr: 'جل وقت الطلب', productSku: 'GEL', quantity: 2 },
+          { productId: 'lotion', productName: 'Lotion', productNameAr: 'لوشن', productSku: 'LOTION', quantity: 1 },
+        ] }],
+    }]);
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(new Uint8Array(buffer).buffer);
+    const names = String(workbook.getWorksheet(1)?.getRow(2).getCell(8).value);
+    expect(names).toContain('بكج العناية');
+    expect(names).toContain('جل وقت الطلب [GEL] × 4');
+    expect(names).toContain('لوشن [LOTION] × 2');
+    expect(workbook.getWorksheet(1)?.getRow(2).getCell(13).value).toBe(78);
+  });
   it('generates a valid XLSX buffer with RTL orientation and Jordan JOD headers', async () => {
     const mockOrders: OrderExportRecord[] = [
       {
@@ -42,7 +60,7 @@ describe('Excel Generation Service (Jordan / JOD)', () => {
     expect(buffer.length).toBeGreaterThan(1000);
 
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(new Uint8Array(buffer).buffer);
 
     const sheet = workbook.getWorksheet(1);
     expect(sheet).toBeDefined();

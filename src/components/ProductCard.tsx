@@ -9,7 +9,7 @@ import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/currency';
 
 export default function ProductCard({ product }: { product: ProductItem }) {
-  const { addItem, items } = useCart();
+  const { addItem, items, isReady } = useCart();
   const cartItem = items.find((i) => i.productId === product.id);
   const isOutOfStock = product.stock <= 0;
 
@@ -32,6 +32,7 @@ export default function ProductCard({ product }: { product: ProductItem }) {
               خصم {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}%
             </span>
           )}
+          {product.isBundle && <span className="bg-brand-dark text-white text-[11px] font-bold px-2.5 py-1 rounded-full">بكج منتجات</span>}
           {product.size && (
             <span className="bg-white/90 backdrop-blur-xs text-gray-700 text-[11px] font-semibold px-2 py-0.5 rounded-full border border-gray-200 shadow-2xs">
               {product.size}
@@ -66,6 +67,9 @@ export default function ProductCard({ product }: { product: ProductItem }) {
           </Link>
         </div>
 
+        {product.isBundle && <ul className="text-xs text-gray-600 space-y-1" aria-label="محتويات البكج">
+          {product.bundleItems?.map(item => <li key={item.productId}>{item.quantity} × {item.product.nameAr || item.product.name}</li>)}
+        </ul>}
         <div className="pt-2 border-t border-rose-50 flex items-center justify-between gap-2">
           {/* Prices */}
           <div>
@@ -82,7 +86,7 @@ export default function ProductCard({ product }: { product: ProductItem }) {
           {/* Add to cart button */}
           <button
             type="button"
-            disabled={isOutOfStock}
+            disabled={isOutOfStock || !isReady}
             onClick={() => addItem(product, 1)}
             className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-all duration-200 ${
               isOutOfStock

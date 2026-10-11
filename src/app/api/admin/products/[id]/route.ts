@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+import { bundleInclude, validateBundleInput, ProductInputError } from '@/lib/bundle-service';
+import { withAvailableStock } from '@/lib/bundles';
 import { authorizePermission } from '@/lib/rbac';
 import { ProductInputSchema } from '@/lib/validations';
 import { logAuditEvent } from '@/lib/audit';
@@ -22,10 +25,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       );
     }
 
-    const updated = await prisma.product.update({
-      where: { id: params.id },
-      data: parsed.data,
-    });
+    const updated = await prisma.$transaction(async (tx) => {
+      await validateBundleInput(tx, parsed.data, params.id);
+      const { bundleItems, ...productData } = parsed.data;
+      return tx.product.update({
+        where: { id: params.id },
+        data: {
+          ...productData, stock: productData.isBundle ? 0 : productData.stock,
+          bundleItems: { deleteMany: {}, create: bundleItems },
+        },
+        include: bundleInclude,
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     await logAuditEvent({
       adminId: authCheck.session.adminId,
@@ -35,8 +46,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       details: `Updated product ${updated.name} (${updated.sku})`,
     });
 
-    return NextResponse.json({ success: true, product: updated });
+    return NextResponse.json({ success: true, product: withAvailableStock(updated) });
   } catch (error: any) {
+    if (error instanceof ProductInputError) return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    if (error?.code === 'P2034') return NextResponse.json({ success: false, error: 'تم تحديث المنتجات أثناء الحفظ؛ أعد المحاولة' }, { status: 409 });
+    if (error?.code === 'P2025') return NextResponse.json({ success: false, error: 'المنتج غير موجود' }, { status: 404 });
+    if (error?.code === 'P2002') return NextResponse.json({ success: false, error: 'كود المنتج مستخدم مسبقًا' }, { status: 409 });
     console.error('Error updating product:', error);
     return NextResponse.json({ success: false, error: error.message || 'فشل تحديث المنتج' }, { status: 500 });
   }

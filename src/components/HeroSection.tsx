@@ -1,12 +1,12 @@
-'use client';
-
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShieldCheck, Truck, ArrowLeft, Heart } from 'lucide-react';
 import AnimatedLogo from './AnimatedLogo';
+import { ProductItem } from '@/types';
+import { formatPrice } from '@/lib/currency';
 
-export default function HeroSection() {
+export default function HeroSection({ featuredProduct, isBestSeller }: { featuredProduct: ProductItem | null; isBestSeller: boolean }) {
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-brand-soft via-white to-rose-50/30 pt-8 pb-16 lg:pt-16 lg:pb-24">
       {/* Decorative ambient background blur */}
@@ -16,7 +16,7 @@ export default function HeroSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Text Column */}
-          <div className="lg:col-span-7 space-y-6 text-center lg:text-right">
+          <div className={`${featuredProduct ? 'lg:col-span-7' : 'lg:col-span-12'} space-y-6 text-center lg:text-right`}>
             <div className="pt-2">
               <AnimatedLogo width={320} height={85} className="mx-auto lg:mr-0 mb-4" />
             </div>
@@ -79,13 +79,14 @@ export default function HeroSection() {
           </div>
 
           {/* Right Product Showcase Hero Banner */}
-          <div className="lg:col-span-5 relative">
+          {featuredProduct && <div className="lg:col-span-5 relative">
+            <Link href={`/products/${featuredProduct.slug}`} aria-label={`عرض ${featuredProduct.nameAr || featuredProduct.name}`} className="block rounded-3xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-600">
             <div className="relative mx-auto max-w-md lg:max-w-none">
               <div className="relative bg-gradient-to-tr from-rose-100 to-white p-6 rounded-3xl border border-rose-200/80 shadow-2xl overflow-hidden">
                 <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center p-4">
                   <Image
-                    src="/images/lightening-intimate-gel.jpg"
-                    alt="The Booty Republic Featured Product"
+                    src={featuredProduct.image}
+                    alt={featuredProduct.nameAr || featuredProduct.name}
                     fill
                     className="object-contain p-4"
                     priority
@@ -95,18 +96,19 @@ export default function HeroSection() {
                 <div className="mt-5 bg-white/90 backdrop-blur-md p-4 rounded-xl border border-rose-100 flex items-center justify-between shadow-xs">
                   <div>
                     <span className="text-[11px] font-bold text-brand-600 uppercase tracking-wider">
-                      المنتج الأكثر طلباً في الأردن
+                      {isBestSeller ? 'المنتج الأكثر طلباً في الأردن' : 'منتج مميز للعناية في الأردن'}
                     </span>
-                    <h4 className="text-sm font-bold text-gray-900">جل تفتيح المناطق الحساسة</h4>
-                    <span className="text-xs text-gray-500">Advanced Brightening Gel</span>
+                    <h4 className="text-sm font-bold text-gray-900">{featuredProduct.nameAr || featuredProduct.name}</h4>
+                    <span className="text-xs text-gray-500">{featuredProduct.subtitle || featuredProduct.name}</span>
                   </div>
                   <div className="text-left font-black text-brand-700 text-lg">
-                    35.00 د.أ
+                    {formatPrice(featuredProduct.price)}
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+            </Link>
+          </div>}
         </div>
       </div>
     </section>

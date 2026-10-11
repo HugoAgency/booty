@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { bundleInclude } from '@/lib/bundle-service';
+import { withAvailableStock } from '@/lib/bundles';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,8 +10,9 @@ export async function GET() {
     const products = await prisma.product.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'asc' },
+      include: bundleInclude,
     });
-    return NextResponse.json({ success: true, products });
+    return NextResponse.json({ success: true, products: products.map(withAvailableStock) });
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(

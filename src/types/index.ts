@@ -19,8 +19,34 @@ export interface ProductItem {
   stock: number;
   isActive: boolean;
   isFeatured: boolean;
+  isBundle?: boolean;
+  bundleItems?: BundleComponent[];
   createdAt?: string | Date;
   updatedAt?: string | Date;
+}
+
+export interface BundleComponent {
+  productId: string;
+  quantity: number;
+  product: {
+    id: string;
+    slug: string;
+    name: string;
+    nameAr: string;
+    sku: string;
+    image: string;
+    stock: number;
+    isActive: boolean;
+    isBundle?: boolean;
+  };
+}
+
+export interface BundleContentSnapshot {
+  productId: string;
+  productName: string;
+  productNameAr: string;
+  productSku: string;
+  quantity: number;
 }
 
 export interface CartItem {
@@ -60,6 +86,7 @@ export interface OrderSummaryItem {
   unitPrice: number;
   quantity: number;
   lineTotal: number;
+  bundleContents?: BundleContentSnapshot[] | null;
 }
 
 export interface OrderDetail {

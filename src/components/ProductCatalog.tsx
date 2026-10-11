@@ -121,8 +121,8 @@ export default function ProductCatalog({ products }: { products: ProductItem[] }
         {filteredProducts.length === 0 ? (
           <div className="py-16 text-center space-y-3 bg-rose-50/40 rounded-2xl border border-dashed border-rose-200">
             <Search className="w-8 h-8 text-rose-300 mx-auto" />
-            <h4 className="text-base font-bold text-gray-700">لم يتم العثور على منتجات مطابقة</h4>
-            <p className="text-xs text-gray-500">جربي كتابة كلمة بحث مختلفة أو إلغاء التصفية</p>
+            <h4 className="text-base font-bold text-gray-700">{products.length === 0 ? 'لا توجد منتجات متاحة حاليًا' : 'لم يتم العثور على منتجات مطابقة'}</h4>
+            <p className="text-xs text-gray-500">{products.length === 0 ? 'نحدّث مجموعتنا؛ يمكنكِ العودة لاحقًا للاطلاع على المنتجات.' : 'جربي كتابة كلمة بحث مختلفة أو إلغاء التصفية'}</p>
             <button
               onClick={() => {
                 setSelectedCategory('ALL');

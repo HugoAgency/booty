@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Plus, Edit, Trash2, Check, RefreshCw, AlertCircle, Package } from 'lucide-react';
+import { Plus, Edit, RefreshCw } from 'lucide-react';
 import { ProductItem } from '@/types';
 import { formatPrice } from '@/lib/currency';
+import ProductEditor from './ProductEditor';
 
 export default function AdminProductsTab({ userRole }: { userRole?: string }) {
   const [products, setProducts] = useState<ProductItem[]>([]);
@@ -13,33 +14,18 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-
-  // Form state
-  const [formName, setFormName] = useState('');
-  const [formNameAr, setFormNameAr] = useState('');
-  const [formSubtitle, setFormSubtitle] = useState('');
-  const [formSubtitleAr, setFormSubtitleAr] = useState('');
-  const [formPrice, setFormPrice] = useState(150);
-  const [formComparePrice, setFormComparePrice] = useState<number | undefined>(190);
-  const [formSku, setFormSku] = useState('');
-  const [formImage, setFormImage] = useState('/images/lightening-intimate-gel.jpg');
-  const [formSize, setFormSize] = useState('60ml');
-  const [formCategory, setFormCategory] = useState('Body Care');
-  const [formCategoryAr, setFormCategoryAr] = useState('عناية الجسم');
-  const [formStock, setFormStock] = useState(50);
-  const [formDescription, setFormDescription] = useState('');
-  const [formDescriptionAr, setFormDescriptionAr] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const fetchProducts = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/admin/products');
       const data = await res.json();
-      if (data.success) {
-        setProducts(data.products);
-      }
+      if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحميل المنتجات');
+      setProducts(data.products);
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : 'تعذر الاتصال؛ أعد المحاولة');
     } finally {
       setIsLoading(false);
     }
@@ -49,70 +35,7 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
     fetchProducts();
   }, []);
 
-  const openEditModal = (p: ProductItem) => {
-    setEditingProduct(p);
-    setFormName(p.name);
-    setFormNameAr(p.nameAr);
-    setFormSubtitle(p.subtitle || '');
-    setFormSubtitleAr(p.subtitleAr || '');
-    setFormPrice(p.price);
-    setFormComparePrice(p.compareAtPrice || undefined);
-    setFormSku(p.sku);
-    setFormImage(p.image);
-    setFormSize(p.size || '');
-    setFormCategory(p.category);
-    setFormCategoryAr(p.categoryAr);
-    setFormStock(p.stock);
-    setFormDescription(p.description);
-    setFormDescriptionAr(p.descriptionAr);
-  };
-
-  const handleSaveProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        name: formName,
-        nameAr: formNameAr,
-        subtitle: formSubtitle || undefined,
-        subtitleAr: formSubtitleAr || undefined,
-        price: Number(formPrice),
-        compareAtPrice: formComparePrice ? Number(formComparePrice) : null,
-        sku: formSku,
-        image: formImage,
-        size: formSize || undefined,
-        category: formCategory,
-        categoryAr: formCategoryAr,
-        stock: Number(formStock),
-        description: formDescription,
-        descriptionAr: formDescriptionAr,
-        isActive: true,
-      };
-
-      const url = editingProduct
-        ? `/api/admin/products/${editingProduct.id}`
-        : '/api/admin/products';
-      const method = editingProduct ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'فشل حفظ بيانات المنتج');
-      }
-
-      setMessage(editingProduct ? 'تم تعديل المنتج بنجاح' : 'تمت إضافة المنتج بنجاح');
-      setTimeout(() => setMessage(null), 3000);
-      setEditingProduct(null);
-      setIsNewModalOpen(false);
-      fetchProducts();
-    } catch (err: any) {
-      alert(err.message || 'حدث خطأ أثناء الحفظ');
-    }
-  };
+  const openEditModal = (p: ProductItem) => setEditingProduct(p);
 
   const handleToggleActive = async (product: ProductItem) => {
     try {
@@ -121,13 +44,11 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...product, isActive: !product.isActive }),
       });
-      if (res.ok) {
-        setProducts((prev) =>
-          prev.map((p) => (p.id === product.id ? { ...p, isActive: !p.isActive } : p))
-        );
-      }
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحديث الحالة');
+      await fetchProducts();
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : 'تعذر الاتصال؛ أعد المحاولة');
     }
   };
 
@@ -139,26 +60,27 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...product, stock: newStock }),
       });
-      if (res.ok) {
-        setProducts((prev) =>
-          prev.map((p) => (p.id === product.id ? { ...p, stock: newStock } : p))
-        );
-      }
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحديث المخزون');
+      await fetchProducts();
     } catch (err) {
-      console.error(err);
+      setError(err instanceof Error ? err.message : 'تعذر الاتصال؛ أعد المحاولة');
     }
   };
 
   return (
     <div className="space-y-6">
+      {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        <span>{error}</span><button type="button" onClick={fetchProducts} className="rounded-lg px-3 py-2 font-bold hover:bg-rose-100">إعادة المحاولة</button>
+      </div>}
       {message && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold">
+        <div role="status" aria-live="polite" className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold">
           {message}
         </div>
       )}
 
       {/* Top Header */}
-      <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
+      <div className="flex flex-wrap gap-3 items-center justify-between bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
         <div>
           <h3 className="text-base font-bold text-gray-900">إدارة كتالوج المنتجات والمخزون</h3>
           <p className="text-xs text-gray-500">
@@ -170,26 +92,12 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
           <button
             onClick={() => {
               setEditingProduct(null);
-              setFormName('');
-              setFormNameAr('');
-              setFormSubtitle('');
-              setFormSubtitleAr('');
-              setFormPrice(150);
-              setFormComparePrice(190);
-              setFormSku(`TBR-NEW-${Date.now().toString().slice(-4)}`);
-              setFormImage('/images/lightening-intimate-gel.jpg');
-              setFormSize('100ml');
-              setFormCategory('Skin Care');
-              setFormCategoryAr('عناية البشرة');
-              setFormStock(50);
-              setFormDescription('منتج فاخر للعناية بالبشرة');
-              setFormDescriptionAr('تركيبة متقدمة للعناية الفائقة بالبشرة');
               setIsNewModalOpen(true);
             }}
             className="px-4 py-2.5 bg-brand-dark hover:bg-gray-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition"
           >
             <Plus className="w-4 h-4" />
-            <span>إضافة منتج جديد</span>
+            <span>إضافة منتج / بكج</span>
           </button>
         )}
       </div>
@@ -216,6 +124,7 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                {products.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-gray-500">لا توجد منتجات بعد. أضف منتجات منفردة ثم أنشئ البكجات.</td></tr>}
                 {products.map((p) => (
                   <tr key={p.id} className="hover:bg-rose-50/20 transition">
                     <td className="p-3.5">
@@ -226,6 +135,7 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
                         <div>
                           <p className="font-bold text-gray-900">{p.nameAr || p.name}</p>
                           <p className="text-[11px] text-gray-400">{p.name}</p>
+                          {p.isBundle && <span className="text-[11px] font-bold text-brand-700">بكج · {p.bundleItems?.length || 0} منتجات</span>}
                         </div>
                       </div>
                     </td>
@@ -233,8 +143,8 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
                     <td className="p-3.5">{p.categoryAr || p.category}</td>
                     <td className="p-3.5 font-bold text-gray-900">{formatPrice(p.price)}</td>
                     <td className="p-3.5">
-                      {isReadOnly ? (
-                        <span className="font-mono font-bold px-2 text-gray-800">{p.stock}</span>
+                      {isReadOnly || p.isBundle ? (
+                        <span className="font-mono font-bold px-2 text-gray-800">{p.stock}{p.isBundle && <span className="block font-sans text-[11px] text-gray-500">محسوب من المكونات</span>}</span>
                       ) : (
                         <div className="flex items-center gap-1.5">
                           <button
@@ -298,147 +208,14 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
         )}
       </div>
 
-      {/* Edit / New Product Modal */}
       {(editingProduct || isNewModalOpen) && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-2xs flex items-center justify-center p-4">
-          <div className="bg-white max-w-2xl w-full rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-5">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="text-lg font-bold text-gray-900">
-                {editingProduct ? 'تعديل بيانات المنتج' : 'إضافة منتج جديد للكتالوج'}
-              </h3>
-              <button
-                onClick={() => {
-                  setEditingProduct(null);
-                  setIsNewModalOpen(false);
-                }}
-                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">الاسم بالعربية</label>
-                  <input
-                    type="text"
-                    required
-                    value={formNameAr}
-                    onChange={(e) => setFormNameAr(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">الاسم بالإنجليزية</label>
-                  <input
-                    type="text"
-                    required
-                    value={formName}
-                    onChange={(e) => setFormName(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">السعر (د.أ)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(Number(e.target.value))}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">السعر السابق (خصم)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formComparePrice || ''}
-                    onChange={(e) => setFormComparePrice(e.target.value ? Number(e.target.value) : undefined)}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">المخزون الحالي</label>
-                  <input
-                    type="number"
-                    required
-                    value={formStock}
-                    onChange={(e) => setFormStock(Number(e.target.value))}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">كود SKU</label>
-                  <input
-                    type="text"
-                    required
-                    value={formSku}
-                    onChange={(e) => setFormSku(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl outline-none font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">الحجم / السعة</label>
-                  <input
-                    type="text"
-                    value={formSize}
-                    onChange={(e) => setFormSize(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-gray-700 mb-1">مسار الصورة</label>
-                  <input
-                    type="text"
-                    required
-                    value={formImage}
-                    onChange={(e) => setFormImage(e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-xl outline-none font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-gray-700 mb-1">الوصف بالعربية</label>
-                <textarea
-                  rows={2}
-                  required
-                  value={formDescriptionAr}
-                  onChange={(e) => setFormDescriptionAr(e.target.value)}
-                  className="w-full p-2.5 border border-gray-200 rounded-xl outline-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-3 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingProduct(null);
-                    setIsNewModalOpen(false);
-                  }}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 font-bold rounded-xl"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-xs"
-                >
-                  حفظ البيانات
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ProductEditor product={editingProduct} products={products}
+          onClose={() => { setEditingProduct(null); setIsNewModalOpen(false); }}
+          onSaved={() => {
+            setMessage('تم حفظ بيانات السلعة بنجاح');
+            setEditingProduct(null); setIsNewModalOpen(false);
+            fetchProducts();
+          }} />
       )}
     </div>
   );

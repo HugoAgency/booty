@@ -72,6 +72,7 @@ export async function GET(req: NextRequest) {
         quantity: i.quantity,
         unitPrice: i.unitPrice,
         lineTotal: i.lineTotal,
+        bundleContents: i.bundleContents,
       })),
       totalAmount: o.totalAmount,
       notes: o.notes,

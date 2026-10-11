@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs';
+import { readBundleContents } from './bundles';
 
 export interface OrderExportRecord {
   orderNumber: string;
@@ -15,6 +16,7 @@ export interface OrderExportRecord {
     quantity: number;
     unitPrice: number;
     lineTotal: number;
+    bundleContents?: unknown;
   }>;
   totalAmount: number;
   notes?: string | null;
@@ -91,7 +93,12 @@ export async function generateOrdersExcelWorkbook(orders: OrderExportRecord[]): 
   // Populate data
   orders.forEach((order, index) => {
     const productNamesStr = order.items
-      .map((it) => it.productNameAr ? `${it.productNameAr} (${it.productName})` : it.productName)
+      .map((it) => {
+        const name = it.productNameAr ? `${it.productNameAr} (${it.productName})` : it.productName;
+        const contents = readBundleContents(it.bundleContents).map(component =>
+          `  ${component.productNameAr || component.productName} [${component.productSku}] × ${component.quantity * it.quantity}`);
+        return [name, ...contents].join('\n');
+      })
       .join('\n');
 
     const productSkusStr = order.items
@@ -139,7 +146,7 @@ export async function generateOrdersExcelWorkbook(orders: OrderExportRecord[]): 
     });
 
     const isEven = index % 2 === 0;
-    row.height = Math.max(26, order.items.length * 18);
+    row.height = Math.max(26, productNamesStr.split('\n').length * 18);
 
     row.eachCell((cell, colNumber) => {
       cell.fill = {

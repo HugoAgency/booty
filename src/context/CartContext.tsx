@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { CartItem, ProductItem } from '@/types';
 
 interface CartContextType {
+  isReady: boolean;
   items: CartItem[];
   addItem: (product: ProductItem, quantity?: number) => void;
   removeItem: (productId: string) => void;
@@ -58,15 +59,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addItem = (product: ProductItem, quantity = 1) => {
+    if (!isLoaded || product.stock <= 0 || quantity < 1) return;
     setItems((prev) => {
       const existing = prev.find((item) => item.productId === product.id);
       if (existing) {
-        const newQty = Math.min(existing.quantity + quantity, product.stock);
+        const newQty = Math.min(existing.quantity + quantity, product.stock, 50);
         return prev.map((item) =>
-          item.productId === product.id ? { ...item, quantity: newQty } : item
+          item.productId === product.id ? {
+            ...item, quantity: newQty, price: product.price, maxStock: product.stock,
+            name: product.name, nameAr: product.nameAr, image: product.image, sku: product.sku,
+          } : item
         );
       } else {
-        const initialQty = Math.min(quantity, product.stock);
+        const initialQty = Math.min(quantity, product.stock, 50);
         return [
           ...prev,
           {
@@ -100,7 +105,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((prev) =>
       prev.map((item) => {
         if (item.productId === productId) {
-          const clamped = Math.min(quantity, item.maxStock || 50);
+          const clamped = Math.min(quantity, item.maxStock || 50, 50);
           return { ...item, quantity: clamped };
         }
         return item;
@@ -120,6 +125,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   return (
     <CartContext.Provider
       value={{
+        isReady: isLoaded,
         items,
         addItem,
         removeItem,

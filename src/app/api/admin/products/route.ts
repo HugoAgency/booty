@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+import { bundleInclude, validateBundleInput, ProductInputError } from '@/lib/bundle-service';
+import { withAvailableStock } from '@/lib/bundles';
 import { authorizePermission } from '@/lib/rbac';
 import { ProductInputSchema } from '@/lib/validations';
 import { logAuditEvent } from '@/lib/audit';
@@ -13,8 +16,9 @@ export async function GET() {
   try {
     const products = await prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
+      include: bundleInclude,
     });
-    return NextResponse.json({ success: true, products });
+    return NextResponse.json({ success: true, products: products.map(withAvailableStock) });
   } catch (error) {
     return NextResponse.json({ success: false, error: 'حدث خطأ أثناء جلب المنتجات' }, { status: 500 });
   }
@@ -44,12 +48,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'رمز المنتج SKU مستخدم مسبقاً' }, { status: 400 });
     }
 
-    const newProduct = await prisma.product.create({
-      data: {
-        ...parsed.data,
-        slug,
-      },
-    });
+    const newProduct = await prisma.$transaction(async (tx) => {
+      await validateBundleInput(tx, parsed.data);
+      const { bundleItems, ...productData } = parsed.data;
+      return tx.product.create({
+        data: {
+          ...productData, slug, stock: productData.isBundle ? 0 : productData.stock,
+          bundleItems: { create: bundleItems },
+        },
+        include: bundleInclude,
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     await logAuditEvent({
       adminId: authCheck.session.adminId,
@@ -59,8 +68,11 @@ export async function POST(req: NextRequest) {
       details: `Created product: ${newProduct.name} (${newProduct.sku})`,
     });
 
-    return NextResponse.json({ success: true, product: newProduct }, { status: 201 });
+    return NextResponse.json({ success: true, product: withAvailableStock(newProduct) }, { status: 201 });
   } catch (error: any) {
+    if (error instanceof ProductInputError) return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    if (error?.code === 'P2034') return NextResponse.json({ success: false, error: 'تم تحديث المنتجات أثناء الحفظ؛ أعد المحاولة' }, { status: 409 });
+    if (error?.code === 'P2002') return NextResponse.json({ success: false, error: 'الاسم أو كود المنتج مستخدم مسبقًا' }, { status: 409 });
     console.error('Error creating product:', error);
     return NextResponse.json({ success: false, error: error.message || 'فشل إضافة المنتج' }, { status: 500 });
   }

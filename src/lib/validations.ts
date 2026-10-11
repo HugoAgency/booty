@@ -55,22 +55,37 @@ export const AdminLoginSchema = z.object({
 });
 
 export const ProductInputSchema = z.object({
-  name: z.string().trim().min(2, 'Name is required'),
-  nameAr: z.string().trim().min(2, 'Arabic name is required'),
-  subtitle: z.string().trim().optional(),
-  subtitleAr: z.string().trim().optional(),
-  description: z.string().trim().min(5, 'Description is required'),
-  descriptionAr: z.string().trim().min(5, 'Arabic description is required'),
-  price: z.number().positive('Price must be greater than 0'),
+  name: z.string().trim().min(2, 'أدخل اسم السلعة بالإنجليزية (حرفان على الأقل)'),
+  nameAr: z.string().trim().min(2, 'أدخل اسم السلعة بالعربية (حرفان على الأقل)'),
+  subtitle: z.string().trim().nullish(),
+  subtitleAr: z.string().trim().nullish(),
+  description: z.string().trim().min(5, 'أدخل وصفًا بالإنجليزية (5 أحرف على الأقل)'),
+  descriptionAr: z.string().trim().min(5, 'أدخل وصفًا بالعربية (5 أحرف على الأقل)'),
+  price: z.number().positive('أدخل سعرًا أكبر من صفر'),
   compareAtPrice: z.number().positive().optional().nullable(),
-  sku: z.string().trim().min(2, 'SKU is required'),
-  image: z.string().trim().min(1, 'Image path or URL is required'),
-  size: z.string().trim().optional(),
-  category: z.string().trim().min(2, 'Category is required'),
-  categoryAr: z.string().trim().min(2, 'Arabic category is required'),
-  stock: z.number().int().min(0, 'Stock cannot be negative'),
+  sku: z.string().trim().min(2, 'أدخل كود السلعة (حرفان على الأقل)'),
+  image: z.string().trim().min(1, 'أدخل مسار الصورة أو رابطها'),
+  size: z.string().trim().nullish(),
+  category: z.string().trim().min(2, 'أدخل القسم بالإنجليزية'),
+  categoryAr: z.string().trim().min(2, 'أدخل القسم بالعربية'),
+  stock: z.number().int().min(0, 'المخزون لا يمكن أن يكون سالبًا'),
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
+  isBundle: z.boolean().default(false),
+  bundleItems: z.array(z.object({
+    productId: z.string().min(1, 'اختر المنتج داخل البكج'),
+    quantity: z.number().int().min(1, 'كمية المنتج داخل البكج يجب أن تكون 1 على الأقل').max(50, 'الحد الأقصى 50 قطعة من كل منتج داخل البكج'),
+  })).max(50, 'الحد الأقصى 50 منتجًا مختلفًا داخل البكج').default([]),
+}).superRefine((data, ctx) => {
+  if (data.isBundle && data.bundleItems.length < 2) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bundleItems'], message: 'اختر منتجين مختلفين على الأقل لإنشاء البكج' });
+  }
+  if (!data.isBundle && data.bundleItems.length > 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bundleItems'], message: 'المنتج المنفرد لا يحتوي على مكونات بكج' });
+  }
+  if (new Set(data.bundleItems.map(item => item.productId)).size !== data.bundleItems.length) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['bundleItems'], message: 'لا يمكن تكرار المنتج داخل البكج؛ عدّل كميته بدلًا من ذلك' });
+  }
 });
 
 export const ChangePasswordSchema = z

@@ -3,16 +3,17 @@ import HeroSection from '@/components/HeroSection';
 import ProductCatalog from '@/components/ProductCatalog';
 import BrandFeatures from '@/components/BrandFeatures';
 import FaqSection from '@/components/FaqSection';
-import { getActiveProducts } from '@/lib/products';
+import { getActiveProducts, getFeaturedProduct } from '@/lib/products';
 
-export const revalidate = 60; // revalidate every 60 seconds
+export const dynamic = 'force-dynamic'; // Every request reads current catalog and sales.
 
 export default async function HomePage() {
   const products = await getActiveProducts();
+  const featured = await getFeaturedProduct(products);
 
   return (
     <div>
-      <HeroSection />
+      <HeroSection featuredProduct={featured.product} isBestSeller={featured.isBestSeller} />
       <ProductCatalog products={products} />
       <BrandFeatures />
       <FaqSection />
