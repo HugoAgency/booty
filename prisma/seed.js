@@ -76,7 +76,11 @@ async function main() {
   }
 
   const adminUsername = process.env.ADMIN_DEFAULT_USERNAME || 'admin';
-  const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@Booty2026!';
+  const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD;
+
+  if (!adminPassword) {
+    throw new Error('ADMIN_DEFAULT_PASSWORD is required before seeding the admin user.');
+  }
   const passwordHash = await bcrypt.hash(adminPassword, 12);
 
   await prisma.adminUser.upsert({

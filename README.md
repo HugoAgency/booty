@@ -117,7 +117,7 @@ Review or modify `.env` as needed:
 * `POSTGRES_DB`: Database name (default: `booty_db`)
 * `JWT_SECRET`: Secret key for admin session cookies
 * `ADMIN_DEFAULT_USERNAME`: Admin login (default: `admin`)
-* `ADMIN_DEFAULT_PASSWORD`: Admin password (default: `Admin@Booty2026!`)
+* `ADMIN_DEFAULT_PASSWORD`: Secure admin password required before seeding
 
 ### Step 2: Build & Launch Containers
 ```bash
@@ -131,8 +131,8 @@ The services will initialize in order:
 ### Step 3: Access the Application
 * **Storefront:** [http://localhost:3000](http://localhost:3000)
 * **Admin Portal:** [http://localhost:3000/admin](http://localhost:3000/admin)
-  * Default Username: `admin`
-  * Default Password: `Admin@Booty2026!`
+  * Username: value of `ADMIN_DEFAULT_USERNAME`
+  * Password: value of `ADMIN_DEFAULT_PASSWORD`
 
 ---
 

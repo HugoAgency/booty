@@ -92,9 +92,6 @@ export default function AdminLoginPage() {
                 className="w-full pr-10 pl-3 py-2.5 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none"
               />
             </div>
-            <p className="text-[11px] text-gray-400 mt-1">
-              كلمة المرور الافتراضية للنظام: <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-600">Admin@Booty2026!</code>
-            </p>
           </div>
 
           <button
