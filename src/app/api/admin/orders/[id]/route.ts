@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminSession } from '@/lib/auth';
+import { authorizePermission } from '@/lib/rbac';
+import { logAuditEvent } from '@/lib/audit';
 import { OrderStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getAdminSession();
-  if (!session) {
-    return NextResponse.json({ success: false, error: 'غير مصرح / Unauthorized' }, { status: 401 });
-  }
+  const authCheck = await authorizePermission('orders:read');
+  if (!authCheck.authorized) return authCheck.response;
 
   try {
     const order = await prisma.order.findUnique({
@@ -26,10 +25,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getAdminSession();
-  if (!session) {
-    return NextResponse.json({ success: false, error: 'غير مصرح / Unauthorized' }, { status: 401 });
-  }
+  const authCheck = await authorizePermission('orders:update');
+  if (!authCheck.authorized) return authCheck.response;
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
 
   try {
     const body = await req.json();
@@ -43,6 +42,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       where: { id: params.id },
       data: { status: status as OrderStatus },
       include: { items: true },
+    });
+
+    await logAuditEvent({
+      adminId: authCheck.session.adminId,
+      username: authCheck.session.username,
+      action: 'ORDER_STATUS_UPDATED',
+      ipAddress: ip,
+      details: `Order ${updated.orderNumber} status changed to ${status}`,
     });
 
     return NextResponse.json({ success: true, order: updated });

@@ -72,3 +72,61 @@ export const ProductInputSchema = z.object({
   isActive: z.boolean().default(true),
   isFeatured: z.boolean().default(false),
 });
+
+export const ChangePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'كلمة المرور الحالية مطلوبة / Current password required'),
+    newPassword: z
+      .string()
+      .min(8, 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل / Minimum 8 characters')
+      .max(100, 'كلمة المرور طويلة جداً / Password too long')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        'يجب أن تحتوي كلمة المرور على أحرف كبيرة وصغيرة وأرقام / Must include uppercase, lowercase, and numbers'
+      ),
+    confirmPassword: z.string().min(1, 'يرجى تأكيد كلمة المرور الجديدة / Confirm password required'),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'كلمتا المرور غير متطابقتين / Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export const CreateAdminUserSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .min(3, 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل / Min 3 characters')
+    .max(50, 'اسم المستخدم طويل جداً / Max 50 characters')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'اسم المستخدم يجب أن يحتوي على أحرف وأرقام فقط / Letters and numbers only'),
+  name: z.string().trim().min(2, 'الاسم مطلوب / Full name required'),
+  email: z.string().trim().email('صيغة البريد الإلكتروني غير صحيحة / Invalid email').optional().or(z.literal('')),
+  password: z
+    .string()
+    .min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل / Minimum 8 characters')
+    .max(100),
+  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'SUPPORT'], {
+    errorMap: () => ({ message: 'الدور المحدد غير صالح / Invalid role' }),
+  }),
+});
+
+export const UpdateAdminUserSchema = z.object({
+  name: z.string().trim().min(2, 'الاسم مطلوب / Full name required').optional(),
+  email: z.string().trim().email('صيغة البريد الإلكتروني غير صحيحة / Invalid email').optional().or(z.literal('')),
+  role: z.enum(['SUPER_ADMIN', 'ADMIN', 'SUPPORT']).optional(),
+  isActive: z.boolean().optional(),
+  password: z
+    .string()
+    .min(8, 'كلمة المرور يجب أن تكون 8 أحرف على الأقل / Minimum 8 characters')
+    .optional(),
+});
+
+export const ShippingConfigSchema = z.object({
+  isFreeShippingPromo: z.boolean().default(false),
+  freeShippingThreshold: z.number().min(0, 'الحد الأدنى لا يمكن أن يكون سالباً / Threshold cannot be negative'),
+  standardFee: z.number().min(0, 'الرسوم لا يمكن أن تكون سالبة / Standard fee cannot be negative'),
+  ammanFee: z.number().min(0, 'رسوم عمّان لا يمكن أن تكون سالبة / Amman fee cannot be negative'),
+  outerGovernoratesFee: z.number().min(0, 'رسوم المحافظات لا يمكن أن تكون سالبة / Outer fee cannot be negative'),
+  estimatedDeliveryTime: z.string().trim().min(2, 'مدة التوصيل مطلوبة / Delivery time required').max(100),
+});
+
+

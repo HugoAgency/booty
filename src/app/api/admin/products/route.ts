@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminSession } from '@/lib/auth';
+import { authorizePermission } from '@/lib/rbac';
 import { ProductInputSchema } from '@/lib/validations';
+import { logAuditEvent } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(req: NextRequest) {
-  const session = await getAdminSession();
-  if (!session) {
-    return NextResponse.json({ success: false, error: 'غير مصرح / Unauthorized' }, { status: 401 });
-  }
+export async function GET() {
+  const authCheck = await authorizePermission('products:read');
+  if (!authCheck.authorized) return authCheck.response;
 
   try {
     const products = await prisma.product.findMany({
@@ -22,10 +21,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getAdminSession();
-  if (!session) {
-    return NextResponse.json({ success: false, error: 'غير مصرح / Unauthorized' }, { status: 401 });
-  }
+  const authCheck = await authorizePermission('products:write');
+  if (!authCheck.authorized) return authCheck.response;
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
 
   try {
     const body = await req.json();
@@ -50,6 +49,14 @@ export async function POST(req: NextRequest) {
         ...parsed.data,
         slug,
       },
+    });
+
+    await logAuditEvent({
+      adminId: authCheck.session.adminId,
+      username: authCheck.session.username,
+      action: 'PRODUCT_CREATED',
+      ipAddress: ip,
+      details: `Created product: ${newProduct.name} (${newProduct.sku})`,
     });
 
     return NextResponse.json({ success: true, product: newProduct }, { status: 201 });

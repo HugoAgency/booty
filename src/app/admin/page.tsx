@@ -16,6 +16,7 @@ export default async function AdminPage() {
       user={{
         username: session.username,
         name: session.username === 'admin' ? 'مدير النظام الرئيسي' : session.username,
+        role: session.role,
       }}
     />
   );

@@ -6,8 +6,9 @@ import { Plus, Edit, Trash2, Check, RefreshCw, AlertCircle, Package } from 'luci
 import { ProductItem } from '@/types';
 import { formatPrice } from '@/lib/currency';
 
-export default function AdminProductsTab() {
+export default function AdminProductsTab({ userRole }: { userRole?: string }) {
   const [products, setProducts] = useState<ProductItem[]>([]);
+  const isReadOnly = userRole === 'SUPPORT';
   const [isLoading, setIsLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -165,30 +166,32 @@ export default function AdminProductsTab() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            setEditingProduct(null);
-            setFormName('');
-            setFormNameAr('');
-            setFormSubtitle('');
-            setFormSubtitleAr('');
-            setFormPrice(150);
-            setFormComparePrice(190);
-            setFormSku(`TBR-NEW-${Date.now().toString().slice(-4)}`);
-            setFormImage('/images/lightening-intimate-gel.jpg');
-            setFormSize('100ml');
-            setFormCategory('Skin Care');
-            setFormCategoryAr('عناية البشرة');
-            setFormStock(50);
-            setFormDescription('منتج فاخر للعناية بالبشرة');
-            setFormDescriptionAr('تركيبة متقدمة للعناية الفائقة بالبشرة');
-            setIsNewModalOpen(true);
-          }}
-          className="px-4 py-2.5 bg-brand-dark hover:bg-gray-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition"
-        >
-          <Plus className="w-4 h-4" />
-          <span>إضافة منتج جديد</span>
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={() => {
+              setEditingProduct(null);
+              setFormName('');
+              setFormNameAr('');
+              setFormSubtitle('');
+              setFormSubtitleAr('');
+              setFormPrice(150);
+              setFormComparePrice(190);
+              setFormSku(`TBR-NEW-${Date.now().toString().slice(-4)}`);
+              setFormImage('/images/lightening-intimate-gel.jpg');
+              setFormSize('100ml');
+              setFormCategory('Skin Care');
+              setFormCategoryAr('عناية البشرة');
+              setFormStock(50);
+              setFormDescription('منتج فاخر للعناية بالبشرة');
+              setFormDescriptionAr('تركيبة متقدمة للعناية الفائقة بالبشرة');
+              setIsNewModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-brand-dark hover:bg-gray-800 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة منتج جديد</span>
+          </button>
+        )}
       </div>
 
       {/* Products Table */}
@@ -230,42 +233,62 @@ export default function AdminProductsTab() {
                     <td className="p-3.5">{p.categoryAr || p.category}</td>
                     <td className="p-3.5 font-bold text-gray-900">{formatPrice(p.price)}</td>
                     <td className="p-3.5">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => handleQuickStock(p, p.stock - 5)}
-                          className="w-6 h-6 rounded bg-gray-100 hover:bg-rose-100 text-gray-700 font-bold flex items-center justify-center text-xs"
-                        >
-                          -5
-                        </button>
-                        <span className="font-mono font-bold px-2">{p.stock}</span>
-                        <button
-                          onClick={() => handleQuickStock(p, p.stock + 5)}
-                          className="w-6 h-6 rounded bg-gray-100 hover:bg-rose-100 text-gray-700 font-bold flex items-center justify-center text-xs"
-                        >
-                          +5
-                        </button>
-                      </div>
+                      {isReadOnly ? (
+                        <span className="font-mono font-bold px-2 text-gray-800">{p.stock}</span>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleQuickStock(p, p.stock - 5)}
+                            className="w-6 h-6 rounded bg-gray-100 hover:bg-rose-100 text-gray-700 font-bold flex items-center justify-center text-xs"
+                          >
+                            -5
+                          </button>
+                          <span className="font-mono font-bold px-2">{p.stock}</span>
+                          <button
+                            onClick={() => handleQuickStock(p, p.stock + 5)}
+                            className="w-6 h-6 rounded bg-gray-100 hover:bg-rose-100 text-gray-700 font-bold flex items-center justify-center text-xs"
+                          >
+                            +5
+                          </button>
+                        </div>
+                      )}
                     </td>
                     <td className="p-3.5">
-                      <button
-                        onClick={() => handleToggleActive(p)}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                          p.isActive
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-gray-100 text-gray-500'
-                        }`}
-                      >
-                        {p.isActive ? 'مفعل (نشط)' : 'معطل'}
-                      </button>
+                      {isReadOnly ? (
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                            p.isActive
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {p.isActive ? 'مفعل (نشط)' : 'معطل'}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleToggleActive(p)}
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                            p.isActive
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {p.isActive ? 'مفعل (نشط)' : 'معطل'}
+                        </button>
+                      )}
                     </td>
                     <td className="p-3.5 text-center">
-                      <button
-                        onClick={() => openEditModal(p)}
-                        className="px-3 py-1 bg-gray-100 hover:bg-brand-50 hover:text-brand-700 text-gray-700 rounded-lg text-xs font-bold transition flex items-center gap-1 mx-auto"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>تعديل</span>
-                      </button>
+                      {isReadOnly ? (
+                        <span className="text-[11px] text-gray-400">للقراءة فقط</span>
+                      ) : (
+                        <button
+                          onClick={() => openEditModal(p)}
+                          className="px-3 py-1 bg-gray-100 hover:bg-brand-50 hover:text-brand-700 text-gray-700 rounded-lg text-xs font-bold transition flex items-center gap-1 mx-auto"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>تعديل</span>
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

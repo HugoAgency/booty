@@ -18,7 +18,7 @@ import {
 import { formatPrice } from '@/lib/currency';
 import { OrderDetail, OrderStatusType } from '@/types';
 
-export default function AdminOrdersTab() {
+export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
   const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -178,14 +178,16 @@ export default function AdminOrdersTab() {
             </button>
 
             {/* Export To Excel Button */}
-            <button
-              onClick={handleExportExcel}
-              disabled={isExporting}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xs transition"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>تصدير Excel (XLSX)</span>
-            </button>
+            {userRole !== 'SUPPORT' && (
+              <button
+                onClick={handleExportExcel}
+                disabled={isExporting}
+                className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xs transition"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>تصدير Excel (XLSX)</span>
+              </button>
+            )}
           </div>
         </div>
 

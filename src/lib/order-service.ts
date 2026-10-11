@@ -1,5 +1,6 @@
 import { prisma } from './prisma';
 import { CheckoutPayload } from '@/types';
+import { getShippingRules, calculateShippingFee } from './shipping-service';
 
 export interface CalculatedOrder {
   orderNumber: string;
@@ -94,7 +95,9 @@ export async function processOrderSubmission(payload: CheckoutPayload) {
   }
 
   subtotal = Number(subtotal.toFixed(2));
-  const shippingFee = 0; // Free shipping promo
+  const shippingRules = await getShippingRules();
+  const shippingCalculation = calculateShippingFee(subtotal, city, shippingRules);
+  const shippingFee = shippingCalculation.fee;
   const totalAmount = Number((subtotal + shippingFee).toFixed(2));
   const orderNumber = generateOrderNumber();
 

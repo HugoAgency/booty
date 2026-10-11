@@ -1,9 +1,9 @@
 # Multi-stage Dockerfile for Next.js Production Deployment
 
 # Stage 1: Base image
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 WORKDIR /app
-RUN apk add --no-cache libc6-compat openssl
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Stage 2: Install dependencies
 FROM base AS deps
@@ -32,8 +32,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 nextjs
 
 # Copy dependencies for prisma migration & runtime tools
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules

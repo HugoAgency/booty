@@ -80,3 +80,36 @@ export interface OrderDetail {
   updatedAt: string | Date;
   items: OrderSummaryItem[];
 }
+
+export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT';
+
+export type AdminPermission =
+  | 'orders:read'
+  | 'orders:update'
+  | 'orders:export'
+  | 'products:read'
+  | 'products:write'
+  | 'products:delete'
+  | 'users:manage'
+  | 'audit:read';
+
+export interface AdminUserSummary {
+  id: string;
+  username: string;
+  email?: string | null;
+  name: string;
+  role: AdminRole;
+  isActive: boolean;
+  lastLoginAt?: string | Date | null;
+  createdAt: string | Date;
+}
+
+export interface AdminAuditLogItem {
+  id: string;
+  adminId?: string | null;
+  username: string;
+  action: string;
+  ipAddress?: string | null;
+  details?: string | null;
+  createdAt: string | Date;
+}

@@ -81,15 +81,30 @@ async function main() {
 
   await prisma.adminUser.upsert({
     where: { username: adminUsername },
-    update: { passwordHash },
+    update: { passwordHash, role: 'SUPER_ADMIN' },
     create: {
       username: adminUsername,
       passwordHash,
       name: 'System Administrator',
-      role: 'ADMIN',
+      role: 'SUPER_ADMIN',
     },
   });
   console.log(`Admin user upserted: ${adminUsername}`);
+
+  await prisma.shippingConfig.upsert({
+    where: { id: 'default' },
+    update: {},
+    create: {
+      id: 'default',
+      isFreeShippingPromo: false,
+      freeShippingThreshold: 40.0,
+      standardFee: 3.0,
+      ammanFee: 2.0,
+      outerGovernoratesFee: 3.5,
+      estimatedDeliveryTime: '1 - 3 أيام عمل',
+    },
+  });
+  console.log('Default shipping configuration upserted (Jordan / JOD).');
 }
 
 main()

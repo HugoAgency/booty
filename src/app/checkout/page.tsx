@@ -14,7 +14,13 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
+import {
+  ShippingRules,
+  DEFAULT_SHIPPING_RULES,
+  calculateShippingFee,
+} from '@/lib/shipping-service';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -32,10 +38,23 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string>('');
+  const [shippingRules, setShippingRules] = useState<ShippingRules>(DEFAULT_SHIPPING_RULES);
 
   useEffect(() => {
     setIdempotencyKey(`checkout_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
+
+    fetch('/api/shipping/rules')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.rules) {
+          setShippingRules(data.rules);
+        }
+      })
+      .catch((err) => console.error('Error fetching shipping rules:', err));
   }, []);
+
+  const shippingCalc = calculateShippingFee(subtotal, city, shippingRules);
+  const finalTotalAmount = Number((subtotal + shippingCalc.fee).toFixed(2));
 
   const jordanCitiesList = [
     'عمّان (العاصمة)',
@@ -312,7 +331,7 @@ export default function CheckoutPage() {
                     </div>
                   ) : (
                     <>
-                      <span>تأكيد وإرسال الطلب ({formatPrice(subtotal)})</span>
+                      <span>تأكيد وإرسال الطلب ({formatPrice(finalTotalAmount)})</span>
                       <CheckCircle2 className="w-5 h-5" />
                     </>
                   )}
@@ -358,28 +377,73 @@ export default function CheckoutPage() {
               ))}
             </div>
 
+            {/* Free Shipping Motivator Progress Bar */}
+            {!shippingCalc.isFree && shippingCalc.amountNeededForFreeShipping > 0 && (
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl text-xs space-y-1.5">
+                <div className="flex items-center justify-between font-bold text-amber-900">
+                  <span className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    <span>توصيل مجاني؟</span>
+                  </span>
+                  <span>
+                    أضيفي <span className="font-mono text-brand-600">{formatPrice(shippingCalc.amountNeededForFreeShipping)}</span> فقط!
+                  </span>
+                </div>
+                <div className="w-full bg-amber-200/60 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-amber-600 h-1.5 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        (subtotal / shippingRules.freeShippingThreshold) * 100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="border-t border-rose-100 pt-4 space-y-2 text-sm">
               <div className="flex justify-between text-gray-600">
                 <span>المجموع الفرعي:</span>
                 <span className="font-semibold text-gray-800">{formatPrice(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-emerald-600 font-medium">
-                <span>رسوم التوصيل بالأردن:</span>
-                <span>مجاناً (عرض ترويجي)</span>
+
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600">رسوم التوصيل ({city}):</span>
+                {shippingCalc.isFree ? (
+                  <span className="text-emerald-600 font-bold flex items-center gap-1">
+                    <span>مجاناً (0.00 د.أ)</span>
+                    {shippingCalc.reason === 'PROMO' ? (
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
+                        عرض ترويجي
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded-full">
+                        فوق {formatPrice(shippingRules.freeShippingThreshold)}
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="font-bold text-gray-900 font-mono">
+                    {formatPrice(shippingCalc.fee)}
+                  </span>
+                )}
               </div>
+
               <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-rose-100">
                 <span>المبلغ الإجمالي المستحق:</span>
-                <span className="text-brand-600 text-lg">{formatPrice(subtotal)}</span>
+                <span className="text-brand-600 text-lg">{formatPrice(finalTotalAmount)}</span>
               </div>
             </div>
 
             <div className="p-3.5 bg-rose-50/70 rounded-xl border border-rose-100 text-xs text-gray-600 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold text-brand-700">
                 <Truck className="w-4 h-4" />
-                <span>توصيل سريع لكافة المحافظات الأردنية</span>
+                <span>توصيل سريع ({shippingRules.estimatedDeliveryTime || '1 - 3 أيام عمل'})</span>
               </div>
               <p className="text-[11px] text-gray-500">
-                سيصلكِ اتصال من مندوب التوصيل لتأكيد الموعد الدقيق فور خروج الشحنة.
+                الدفع عند الاستلام (كاش) - سيصلكِ اتصال من المندوب لتأكيد الموعد عند خروج الشحنة.
               </p>
             </div>
           </div>

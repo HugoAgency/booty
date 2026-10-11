@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminSession } from '@/lib/auth';
+import { authorizePermission } from '@/lib/rbac';
 import { OrderStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const session = await getAdminSession();
-  if (!session) {
-    return NextResponse.json({ success: false, error: 'غير مصرح / Unauthorized' }, { status: 401 });
-  }
+  const authCheck = await authorizePermission('orders:read');
+  if (!authCheck.authorized) return authCheck.response;
 
   try {
     const { searchParams } = new URL(req.url);

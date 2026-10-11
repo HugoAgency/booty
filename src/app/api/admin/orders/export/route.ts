@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAdminSession } from '@/lib/auth';
+import { authorizePermission } from '@/lib/rbac';
 import { generateOrdersExcelWorkbook, OrderExportRecord } from '@/lib/excel';
+import { logAuditEvent } from '@/lib/audit';
 import { OrderStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const session = await getAdminSession();
-  if (!session) {
-    return NextResponse.json({ success: false, error: 'غير مصرح / Unauthorized' }, { status: 401 });
-  }
+  const authCheck = await authorizePermission('orders:export');
+  if (!authCheck.authorized) return authCheck.response;
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1';
 
   try {
     const { searchParams } = new URL(req.url);
@@ -81,6 +82,14 @@ export async function GET(req: NextRequest) {
 
     const now = new Date().toISOString().slice(0, 10);
     const filename = `TBR_Orders_${now}.xlsx`;
+
+    await logAuditEvent({
+      adminId: authCheck.session.adminId,
+      username: authCheck.session.username,
+      action: 'ORDER_EXPORTED',
+      ipAddress: ip,
+      details: `Exported ${exportData.length} orders to ${filename}`,
+    });
 
     return new NextResponse(new Uint8Array(excelBuffer), {
       status: 200,
