@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Menu, X, Shield, Sparkles } from 'lucide-react';
+import { ShoppingBag, Menu, X, Sparkles } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import AnimatedLogo from './AnimatedLogo';
 
@@ -65,17 +65,8 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Actions: Admin link + Cart button */}
+          {/* Actions: Cart button */}
           <div className="flex items-center gap-3">
-            <Link
-              href="/admin/login"
-              className="hidden sm:flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-600 px-2.5 py-1.5 rounded-md hover:bg-rose-50 transition"
-              title="لوحة الإدارة / Admin"
-            >
-              <Shield className="w-4 h-4" />
-              <span>الإدارة / Admin</span>
-            </Link>
-
             {/* Shopping Cart button */}
             <button
               type="button"
@@ -125,16 +116,6 @@ export default function Header() {
           >
             الأسئلة الشائعة / FAQ
           </Link>
-          <div className="pt-2 border-t border-rose-100">
-            <Link
-              href="/admin/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-brand-600"
-            >
-              <Shield className="w-4 h-4" />
-              <span>دخول الإدارة / Admin Portal</span>
-            </Link>
-          </div>
         </div>
       )}
     </header>

@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Sparkles, ShieldCheck, Truck, ArrowLeft, Heart } from 'lucide-react';
+import { ShieldCheck, Truck, ArrowLeft, Heart } from 'lucide-react';
 import AnimatedLogo from './AnimatedLogo';
 
 export default function HeroSection() {
@@ -17,11 +17,6 @@ export default function HeroSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Text Column */}
           <div className="lg:col-span-7 space-y-6 text-center lg:text-right">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-100/80 border border-brand-200 text-brand-700 text-xs sm:text-sm font-bold shadow-2xs">
-              <Sparkles className="w-4 h-4 text-brand-600 animate-spin-slow" />
-              <span>المتجر الحصري في المملكة الأردنية الهاشمية 🇯🇴</span>
-            </div>
-
             <div className="pt-2">
               <AnimatedLogo width={320} height={85} className="mx-auto lg:mr-0 mb-4" />
             </div>

@@ -53,11 +53,6 @@ export default function Footer() {
                   الأسئلة المتكررة / FAQs
                 </Link>
               </li>
-              <li>
-                <Link href="/admin/login" className="hover:text-brand-300 transition-colors">
-                  بوابة إدارة المتجر / Admin Portal
-                </Link>
-              </li>
             </ul>
           </div>
 
