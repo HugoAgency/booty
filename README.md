@@ -274,11 +274,29 @@ Docker's existing entrypoint also runs the schema sync before startup. Review sc
 changes and back up an existing production database using the existing deployment
 process. No extra bundle seed or inventory reset is required.
 
+### Vercel deployment
+
+`vercel.json` selects `npm run build:vercel`. Before Next.js builds, it generates
+the Prisma client and runs `npm run db:deploy` against the deployment's
+`DATABASE_URL`. Both Production and Preview must have a reachable PostgreSQL
+database configured. This applies the bundle columns/table before the new
+application can query them; a successful Next.js build alone does not update a
+database. The command does not seed products or reset inventory.
+
+Schema synchronization runs without `--accept-data-loss` or `--force-reset`.
+If Prisma detects a change that requires accepting data loss, or cannot connect,
+the deployment fails and leaves the previous deployment serving traffic. Resolve
+the reported schema or connection issue before redeploying. Do not add data-loss
+flags to make the build pass.
+
 ### Verification
 
 `npm test` runs catalog/hero and bundle validation tests. PostgreSQL integration tests
 opt in through a dedicated database whose name contains `bundle_test`; both variables
-must refer to that database. The six database tests skip when opt-in is absent.
+must refer to that database. The six checkout tests and two deployment tests skip
+when opt-in is absent. Deployment tests use a separate temporary schema to reproduce
+the pre-bundle database, preserve existing records, verify repeated synchronization,
+and check that destructive changes are refused.
 
 ```bash
 export DATABASE_URL='postgresql://postgres@127.0.0.1:5432/booty_bundle_test?schema=public'

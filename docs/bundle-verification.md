@@ -29,3 +29,20 @@ that the whole legacy application passes the premium audit or a full accessibili
 The PostgreSQL schema adds bundle membership and order snapshots. Apply it through
 the repository's existing schema-sync/deployment workflow before using bundles in another
 environment; the local development and dedicated test schemas were synchronized successfully.
+
+## Vercel schema-sync fix (2026-10-12)
+
+The original build generated Prisma's client but did not apply database changes.
+Vercel now runs `build:vercel`, which generates the client, safely synchronizes the
+deployment database without data-loss flags, and then builds Next.js.
+
+- All **52 tests in 11 suites passed**, including two new PostgreSQL deployment tests.
+- The old schema from commit `55ec935` reproduces Prisma `P2022` on the new product
+  query. Deployment synchronization repairs that schema, preserves existing product
+  price/stock and order contents, and succeeds when run again.
+- A populated column outside the current schema causes deployment synchronization
+  to fail; its values remain intact.
+- Type checking and the complete `npm run build:vercel` pipeline passed against
+  the dedicated test database. Production Vercel logs and its database were not accessible
+  from this workspace; the reported production symptom remains to be confirmed after
+  the new deployment.

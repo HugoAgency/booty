@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:vercel": "prisma generate && npm run db:deploy && npm run build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
     "db:push": "prisma db push",
+    "db:deploy": "prisma db push --skip-generate",
     "db:migrate": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "node prisma/seed.js",
