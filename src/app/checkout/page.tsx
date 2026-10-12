@@ -221,7 +221,7 @@ export default function CheckoutPage() {
                     aria-describedby={invalidField === 'customerName' ? 'checkout-error' : undefined}
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="مثال: رنا خالد المجالي"
+                    placeholder="مثال: رنا خالد"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 text-sm outline-none transition"
                   />
                 </div>
