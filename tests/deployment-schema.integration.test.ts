@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { getDashboardStats } from '../src/lib/dashboard-stats';
 
 const run = process.env.BUNDLE_TEST_DATABASE_URL ? describe : describe.skip;
 
@@ -49,6 +50,11 @@ run('Vercel schema deployment with PostgreSQL', () => {
   });
 
   it('reproduces missing bundle schema, upgrades it repeatedly and preserves existing records', async () => {
+    // Reproduce the former statistics query failure on the deployed pre-bundle schema.
+    await expect(isolated.order.findMany({ take: 5, include: { items: true } })).rejects.toMatchObject({ code: 'P2022' });
+    expect(await getDashboardStats(isolated)).toMatchObject({ totalOrders: 1, pendingOrders: 1,
+      completedOrders: 0, totalRevenue: 35, totalProducts: 1,
+      recentOrders: [expect.objectContaining({ orderNumber: 'EXISTING-ORDER', totalAmount: 35 })] });
     await expect(isolated.product.findMany({ include: { bundleItems: true } })).rejects.toMatchObject({ code: 'P2022' });
     for (let attempt = 0; attempt < 2; attempt++) {
       execFileSync('npm', ['run', 'db:deploy'], {

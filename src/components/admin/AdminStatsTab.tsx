@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, DollarSign, Clock, Package, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { formatPrice } from '@/lib/currency';
-import { OrderDetail } from '@/types';
+import { DashboardStats } from '@/types';
 import { useRemoteData } from '@/hooks/useRemoteData';
 
 export default function AdminStatsTab({
@@ -12,7 +12,7 @@ export default function AdminStatsTab({
   onSelectTab: (tab: 'orders' | 'products') => void;
 }) {
   const { data, loading: isLoading, error, refresh } = useRemoteData<{
-    stats: { totalRevenue: number; totalOrders: number; pendingOrders: number; totalProducts: number; recentOrders: OrderDetail[] };
+    stats: DashboardStats;
   }>('/api/admin/stats', 'تعذر تحميل لوحة المؤشرات');
   const stats = data?.stats;
 
@@ -104,7 +104,7 @@ export default function AdminStatsTab({
 
         {stats.recentOrders && stats.recentOrders.length > 0 ? (
           <div className="divide-y divide-gray-100">
-            {stats.recentOrders.map((order: OrderDetail) => (
+            {stats.recentOrders.map(order => (
               <div key={order.id} className="py-3 flex items-center justify-between text-xs">
                 <div>
                   <span className="font-mono font-bold text-brand-700">

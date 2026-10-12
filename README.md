@@ -335,6 +335,10 @@ server before running `npm run build`; both commands use `.next`.
 
 ## 11. Cross-page Data Consistency Audit
 
+For `/api/admin/stats` failures, see [statistics diagnosis and the verified read fix](docs/statistics-read-fix.md).
+The overview fetches only recent-order summary fields; diagnostic responses distinguish
+missing schema from unavailable connections without exposing raw database errors.
+
 ### Editable usage, ingredients and subtitles
 
 In **لوحة الإدارة ← المنتجات والمخزون ← تعديل**, use **تفاصيل صفحة المنتج**

@@ -8,6 +8,12 @@ UI. SHOW_INTERNAL_ADMIN_TABS controls both navigation and panel visibility for a
 roles. Existing components, account/audit APIs, data and server permissions remain
 available; hiding the interface does not disable audit logging or change authorization.
 
+Dashboard statistics read order summaries only; they do not depend on OrderItem or
+bundle-content columns. Summary data exposes only the fields used by the overview.
+Schema/connection failures return explicit diagnostic codes and actionable admin copy,
+never zero totals or raw database diagnostics. Known transient connection failures
+advertise Retry-After; current authentication and retry behavior remain the owners.
+
 InstagramLink owns external account navigation in both the homepage promotion and
 the footer. Its destination comes from the owner's provided account link, recorded
 once in `src/lib/social.ts`. It preserves the account spelling, opens a new tab with

@@ -116,6 +116,15 @@ export interface OrderDetail {
 
 export type AdminRole = 'SUPER_ADMIN' | 'ADMIN' | 'SUPPORT';
 
+export interface DashboardStats {
+  totalOrders: number;
+  pendingOrders: number;
+  completedOrders: number;
+  totalRevenue: number;
+  totalProducts: number;
+  recentOrders: Array<Pick<OrderDetail, 'id' | 'orderNumber' | 'customerName' | 'city' | 'totalAmount' | 'createdAt'>>;
+}
+
 export type AdminPermission =
   | 'orders:read'
   | 'orders:update'
