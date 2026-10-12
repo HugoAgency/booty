@@ -56,6 +56,9 @@ export const AdminLoginSchema = z.object({
   password: z.string().min(6, 'كلمة المرور مطلوبة / Password required'),
 });
 
+const optionalProductText = z.string().trim().max(5000, 'النص يجب ألا يتجاوز 5000 حرف')
+  .transform(value => value || null).nullish();
+
 export const ProductInputSchema = z.object({
   name: z.string().trim().min(2, 'أدخل اسم السلعة بالإنجليزية (حرفان على الأقل)'),
   nameAr: z.string().trim().min(2, 'أدخل اسم السلعة بالعربية (حرفان على الأقل)'),
@@ -63,6 +66,10 @@ export const ProductInputSchema = z.object({
   subtitleAr: z.string().trim().nullish(),
   description: z.string().trim().min(5, 'أدخل وصفًا بالإنجليزية (5 أحرف على الأقل)'),
   descriptionAr: z.string().trim().min(5, 'أدخل وصفًا بالعربية (5 أحرف على الأقل)'),
+  howToUse: optionalProductText,
+  howToUseAr: optionalProductText,
+  ingredients: optionalProductText,
+  ingredientsAr: optionalProductText,
   price: z.number().positive('أدخل سعرًا أكبر من صفر'),
   compareAtPrice: z.number().positive().optional().nullable(),
   sku: z.string().trim().min(2, 'أدخل كود السلعة (حرفان على الأقل)'),

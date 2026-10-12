@@ -54,15 +54,15 @@ export default function ProductDetailClient({ product: initialProduct }: { produ
                 وفر {Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}%
               </span>
             )}
-            <span className="bg-white/90 backdrop-blur-xs text-gray-800 text-xs font-bold px-3 py-1 rounded-full border border-gray-200 shadow-2xs">
-              {product.size || 'الحجم القياسي'}
-            </span>
+            {product.size && <span className="bg-white/90 backdrop-blur-xs text-gray-800 text-xs font-bold px-3 py-1 rounded-full border border-gray-200 shadow-2xs">
+              {product.size}
+            </span>}
           </div>
         </div>
       </div>
 
       {/* Product Details Section */}
-      <div className="lg:col-span-6 space-y-6">
+      <div className="lg:col-span-6 min-w-0 space-y-6">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-brand-600 uppercase mb-2">
             <span>{product.categoryAr || product.category}</span>
@@ -219,20 +219,26 @@ export default function ProductDetailClient({ product: initialProduct }: { produ
           <div className="pt-4 text-xs sm:text-sm text-gray-600 leading-relaxed min-h-[100px]">
             {activeTab === 'benefits' && (
               <div className="space-y-3">
-                <p>{product.descriptionAr || product.description}</p>
+                <p className="whitespace-pre-wrap break-words" dir="auto">{product.descriptionAr || product.description}</p>
               </div>
             )}
 
             {activeTab === 'howTo' && (
               <div className="space-y-2">
-                <p>تختلف طريقة الاستخدام باختلاف المنتج. راجعي الإرشادات الموضحة على العبوة قبل الاستخدام.</p>
-                {product.isBundle && <p>اتبعي تعليمات كل منتج داخل البكج على حدة.</p>}
+                {product.howToUseAr?.trim() || product.howToUse?.trim()
+                  ? <p className="whitespace-pre-wrap break-words" dir="auto">{product.howToUseAr?.trim() || product.howToUse?.trim()}</p>
+                  : <><p>لم تُضف طريقة الاستخدام لهذا المنتج بعد.</p>
+                    <p>تختلف طريقة الاستخدام باختلاف المنتج. راجعي الإرشادات الموضحة على العبوة قبل الاستخدام.</p>
+                    {product.isBundle && <p>اتبعي تعليمات كل منتج داخل البكج على حدة.</p>}</>}
               </div>
             )}
 
             {activeTab === 'ingredients' && (
               <div className="space-y-2">
-                <p>راجعي قائمة المكونات الموضحة على عبوة هذا المنتج؛ تختلف التركيبة بين المنتجات.</p>
+                {product.ingredientsAr?.trim() || product.ingredients?.trim()
+                  ? <p className="whitespace-pre-wrap break-words" dir="auto">{product.ingredientsAr?.trim() || product.ingredients?.trim()}</p>
+                  : <><p>لم تُضف المكونات الفعالة لهذا المنتج بعد.</p>
+                    <p>راجعي قائمة المكونات الموضحة على عبوة هذا المنتج؛ تختلف التركيبة بين المنتجات.</p></>}
               </div>
             )}
           </div>

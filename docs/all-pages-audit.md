@@ -59,8 +59,62 @@ Direct access to `https://thebootyrepublic.vercel.app/` returned a proxy CONNECT
 database contents and Vercel deployment completion were therefore not inspected.
 Local checks validate the repository implementation, not every production condition
 or every possible future failure. Deployment uses the existing Vercel main-branch
-integration and schema-sync workflow; no schema change is required by this audit.
+integration and schema-sync workflow. The initial audit required no schema change;
+the content follow-up below adds nullable columns through the same workflow.
 
 The audit retains existing brand/contact/payment content, full-list API contracts
 and historical order snapshots. It does not constitute a complete security,
 accessibility or performance certification.
+
+## Follow-up: editable product details
+
+The initial audit replaced invented usage/ingredients with packaging guidance, but
+did not provide product-specific content controls. The follow-up adds nullable
+Arabic/English usage and ingredient columns and exposes them in the shared product
+editor for both standalone products and bundles. The description still supplies
+the benefits tab. Existing records keep their descriptions, prices, stock and orders.
+
+Two related gaps were corrected: subtitle values already persisted but lacked editor
+controls, and the product detail displayed a made-up standard size when no size was
+saved. Subtitles now have Arabic/English controls and the same fallback order in the
+hero, catalog and details. Absent size has no badge.
+
+The complete product-field review follows this mapping:
+
+| Public or business value | Stored source | Administrator control |
+|---|---|---|
+| Name | name/nameAr | Arabic/English name inputs |
+| Subtitle | subtitle/subtitleAr | Arabic/English subtitle inputs |
+| Benefits | description/descriptionAr | Arabic/English description textareas |
+| Usage | howToUse/howToUseAr | Arabic/English usage textareas |
+| Ingredients | ingredients/ingredientsAr | Arabic/English ingredient textareas |
+| Price and discount | price/compareAtPrice | Current and previous price inputs |
+| Image, SKU, size and category | image/sku/size/category/categoryAr | Existing metadata inputs |
+| Availability | stock/isActive and bundle components | Stock or computed component availability; active toggle |
+| Featured selection | isFeatured and non-cancelled order quantities | Featured toggle; popularity derived from orders |
+| Bundle contents | BundleItem productId/quantity | Existing component and quantity controls |
+| Delivery | ShippingConfig | Existing shipping settings panel |
+
+IDs, slug and timestamps are system-owned. Brand/contact/policy copy is general store
+content; it is not represented as an editable product attribute.
+
+Content is plain text with line breaks preserved and markup escaped. Empty Arabic
+falls back to saved English; when both are empty, the tab explicitly identifies
+missing details before packaging guidance. Clearing saves null. Older API payloads
+that omit these optional fields preserve existing content. The same permissions,
+optimistic version checks and failed-save draft behavior protect the new fields.
+
+Final follow-up verification: 94 tests passed in 17 Vitest suites, production and
+Vercel schema-sync builds passed, TypeScript passed, and strict UI audit reported
+zero findings. The schema deployment test verifies that all four new columns are
+nullable after upgrading a pre-feature schema and that existing records remain intact.
+The new product-content browser suite checks actual creation, edits, multiline/escaped
+display, failure/validation recovery, clearing/English fallback, long mobile content,
+empty states, focus revalidation, bundle content and SUPPORT write denial. Production
+network limitations above still apply.
+
+All four browser suites passed on the final production build: product-content **10**,
+bundles **9**, all-pages **20**, shipping **11** — **50 checks** total. The home
+fixtures now verify popularity and featured ordering without assuming an empty
+catalog. Narrow editor/detail screenshots were inspected. The working changes passed
+`git diff --check` and the browser scripts passed Node syntax checks.

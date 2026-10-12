@@ -17,6 +17,8 @@ export default function ProductEditor({ product, products, onClose, onSaved }: {
   const [form, setForm] = useState<ProductInput>(() => ({
     name: product?.name || '', nameAr: product?.nameAr || '',
     description: product?.description || '', descriptionAr: product?.descriptionAr || '',
+    howToUse: product?.howToUse || '', howToUseAr: product?.howToUseAr || '',
+    ingredients: product?.ingredients || '', ingredientsAr: product?.ingredientsAr || '',
     subtitle: product?.subtitle || '', subtitleAr: product?.subtitleAr || '',
     price: product?.price || 0, compareAtPrice: product?.compareAtPrice || null,
     sku: product?.sku || '', image: product?.image || '/images/lightening-intimate-gel.jpg',
@@ -113,6 +115,7 @@ export default function ProductEditor({ product, products, onClose, onSaved }: {
           </fieldset>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {field('nameAr', 'الاسم بالعربية')}{field('name', 'الاسم بالإنجليزية')}
+            {field('subtitleAr', 'العنوان الفرعي بالعربية (اختياري)')}{field('subtitle', 'العنوان الفرعي بالإنجليزية (اختياري)')}
             {field('price', form.isBundle ? 'سعر البكج كاملًا (د.أ)' : 'السعر (د.أ)', 'number')}
             {field('compareAtPrice', 'السعر السابق (اختياري)', 'number')}
             {field('sku', 'كود السلعة SKU')}{field('image', 'مسار الصورة أو رابطها')}
@@ -151,13 +154,25 @@ export default function ProductEditor({ product, products, onClose, onSaved }: {
             <p id="bundle-error" role={errors.bundleItems ? 'alert' : undefined} className="min-h-4 text-xs text-rose-700">{errors.bundleItems}</p>
             <p className="text-xs font-bold" aria-live="polite">المخزون المتاح: {bundleStock} بكج</p>
           </fieldset>}
-          {(['descriptionAr', 'description'] as const).map(key => <div key={key}>
-            <label htmlFor={`product-${key}`} className="mb-1 block font-bold text-gray-700">{key === 'descriptionAr' ? 'الوصف بالعربية' : 'الوصف بالإنجليزية'}</label>
-            <textarea id={`product-${key}`} rows={3} disabled={saving} value={form[key]} onChange={event => update(key, event.target.value)}
-              aria-invalid={Boolean(errors[key])} aria-describedby={errors[key] ? `${key}-error` : undefined}
-              className="w-full resize-none rounded-xl border border-gray-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-600" />
-            {errors[key] && <p id={`${key}-error`} className="text-rose-700">{errors[key]}</p>}
-          </div>)}
+          <fieldset disabled={saving} className="space-y-4 rounded-2xl border border-rose-100 p-4">
+            <legend className="px-1 font-bold text-brand-dark">تفاصيل صفحة المنتج</legend>
+            <p id="product-content-help" className="text-xs leading-relaxed text-gray-600">الوصف يظهر في «المزايا والمفعول». أضيفي طريقة الاستخدام والمكونات كما ترد على العبوة، ولكل منتج داخل البكج عند الحاجة. يعرض المتجر النص العربي، ثم الإنجليزي إذا لم يوجد العربي. ترك حقل اختياري فارغًا يمسح محتواه المحفوظ.</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {([
+                ['descriptionAr', 'الوصف بالعربية'], ['description', 'الوصف بالإنجليزية'],
+                ['howToUseAr', 'طريقة الاستخدام بالعربية (اختياري)'], ['howToUse', 'طريقة الاستخدام بالإنجليزية (اختياري)'],
+                ['ingredientsAr', 'المكونات الفعالة بالعربية (اختياري)'], ['ingredients', 'المكونات الفعالة بالإنجليزية (اختياري)'],
+              ] as const).map(([key, label]) => <div key={key}>
+                <label htmlFor={`product-${key}`} className="mb-1 block font-bold text-gray-700">{label}</label>
+                <textarea id={`product-${key}`} rows={4} dir={key.endsWith('Ar') ? 'rtl' : 'ltr'} lang={key.endsWith('Ar') ? 'ar' : 'en'}
+                  disabled={saving} value={form[key] ?? ''} onChange={event => update(key, event.target.value)}
+                  ref={element => { if (element) { element.style.height = 'auto'; element.style.height = `${Math.min(Math.max(element.scrollHeight, 112), 320)}px`; } }}
+                  aria-invalid={Boolean(errors[key])} aria-describedby={`product-content-help${errors[key] ? ` ${key}-error` : ''}`}
+                  className="w-full resize-none rounded-xl border border-gray-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" />
+                {errors[key] && <p id={`${key}-error`} className="text-rose-700">{errors[key]}</p>}
+              </div>)}
+            </div>
+          </fieldset>
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2"><input type="checkbox" disabled={saving} checked={form.isActive} onChange={event => update('isActive', event.target.checked)} />مفعل في المتجر</label>
             <label className="flex items-center gap-2"><input type="checkbox" disabled={saving} checked={form.isFeatured} onChange={event => update('isFeatured', event.target.checked)} />منتج مميز</label>

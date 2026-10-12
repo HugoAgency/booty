@@ -57,7 +57,8 @@ run('Vercel schema deployment with PostgreSQL', () => {
       });
     }
     const product = await isolated.product.findUniqueOrThrow({ where: { id: 'existing-product' }, include: { bundleItems: true } });
-    expect(product).toMatchObject({ name: 'Existing product', price: 35, stock: 17, isBundle: false, bundleItems: [] });
+    expect(product).toMatchObject({ name: 'Existing product', price: 35, stock: 17, isBundle: false, bundleItems: [],
+      howToUse: null, howToUseAr: null, ingredients: null, ingredientsAr: null });
     const order = await isolated.order.findUniqueOrThrow({ where: { id: 'existing-order' }, include: { items: true } });
     expect(order).toMatchObject({ totalAmount: 35, items: [expect.objectContaining({ bundleContents: null, quantity: 1 })] });
     expect(await isolated.product.count()).toBe(1);

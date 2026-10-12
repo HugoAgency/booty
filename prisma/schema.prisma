@@ -23,6 +23,10 @@ model Product {
   subtitleAr     String?
   description    String
   descriptionAr  String
+  howToUse       String?
+  howToUseAr     String?
+  ingredients    String?
+  ingredientsAr  String?
   price          Float
   compareAtPrice Float?
   sku            String      @unique

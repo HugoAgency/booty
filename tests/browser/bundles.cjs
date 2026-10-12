@@ -29,6 +29,15 @@ async function main() {
     await db.adminUser.create({ data: { id: stamp, username: stamp, name: 'Bundle browser admin', role: 'ADMIN', passwordHash: 'unused-test-fixture' } });
     const first = await db.product.create({ data: fixture('gel', 'جل اختبار المتصفح', 27, 8) });
     const second = await db.product.create({ data: fixture('lotion', 'لوشن اختبار المتصفح', 30, 6) });
+    // Own the homepage popularity fixture; an existing featured item must not make
+    // this test depend on an otherwise empty catalog.
+    const sales = await db.orderItem.groupBy({ by: ['productId'], where: { order: { status: { not: 'CANCELLED' } } }, _sum: { quantity: true } });
+    const quantity = Math.max(0, ...sales.map(item => item._sum.quantity || 0)) + 1;
+    await db.order.create({ data: { orderNumber: `TEST-${stamp}`, idempotencyKey: `${stamp}-featured`,
+      customerName: 'Homepage browser fixture', customerPhone: '0790000000', city: 'Amman', address: 'Test address',
+      subtotal: first.price * quantity, totalAmount: first.price * quantity, status: 'COMPLETED',
+      items: { create: { productId: first.id, productName: first.name, productNameAr: first.nameAr,
+        productSku: first.sku, unitPrice: first.price, quantity, lineTotal: first.price * quantity } } } });
     const baseURL = process.env.BUNDLE_TEST_BASE_URL || 'http://127.0.0.1:3100';
     const token = await new SignJWT({ adminId: stamp, username: stamp, role: 'ADMIN' })
       .setProtectedHeader({ alg: 'HS256' }).setExpirationTime('10m')
@@ -172,7 +181,7 @@ async function main() {
     console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));
   } finally {
     await browser?.close();
-    await db.order.deleteMany({ where: { idempotencyKey: stamp } });
+    await db.order.deleteMany({ where: { idempotencyKey: { in: [stamp, `${stamp}-featured`] } } });
     await db.adminAuditLog.deleteMany({ where: { username: stamp } });
     await db.adminUser.deleteMany({ where: { id: stamp } });
     const fixtures = await db.product.findMany({ where: { sku: { startsWith: stamp } }, select: { id: true } });

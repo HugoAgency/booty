@@ -9,6 +9,10 @@ export interface ProductItem {
   subtitleAr?: string | null;
   description: string;
   descriptionAr: string;
+  howToUse?: string | null;
+  howToUseAr?: string | null;
+  ingredients?: string | null;
+  ingredientsAr?: string | null;
   price: number;
   compareAtPrice?: number | null;
   sku: string;

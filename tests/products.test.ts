@@ -60,4 +60,9 @@ describe('Actual catalog data and homepage card', () => {
     expect(html).not.toContain('35.00');
     expect(html).not.toContain('المنتج الأكثر طلباً');
   });
+  it('uses the saved Arabic subtitle consistently with catalog and detail cards', () => {
+    const html = renderToStaticMarkup(React.createElement(HeroSection, { featuredProduct: { ...product, subtitleAr: 'عنوان عربي فعلي' }, isBestSeller: false }));
+    expect(html).toContain('عنوان عربي فعلي');
+    expect(html).not.toContain(product.subtitle);
+  });
 });

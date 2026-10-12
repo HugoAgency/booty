@@ -32,6 +32,7 @@ Without a selected city, cart totals explicitly exclude delivery fees.
 | Lifecycle | Existing product APIs | Deactivation is soft; deactivated components make dependent bundles unavailable. |
 | Historical fulfillment | `OrderItem.bundleContents` | Order details and Excel use the saved composition, not current catalog contents. |
 | Homepage product | `getFeaturedProduct` and `getActiveProducts` | Current names, images and prices; popularity uses non-cancelled orders and no demo fallback. |
+| Product detail content | User request and nullable Product howToUse/ingredients fields, ProductInputSchema | ProductEditor owns bilingual usage/ingredients and subtitles; public tabs prefer Arabic, then English, and explicitly identify missing content. |
 
 ## Canonical UI Map
 
@@ -45,6 +46,17 @@ Without a selected city, cart totals explicitly exclude delivery fees.
 | Date | Native order filter fields and buildOrderWhere | Asia/Amman calendar-day boundaries | native | unit and browser list/export boundary checks |
 
 ## Catalog operations
+
+ProductEditor exposes names, subtitles, descriptions (the benefits tab), usage,
+ingredients, price/previous price, image, SKU, category, size, stock, activation,
+featured state and bundle composition. Slug, IDs and timestamps remain system-owned.
+Usage and ingredients are optional plain text, at most 5000 characters per language;
+multiline content is preserved and HTML is escaped. Clearing an optional content
+field saves null; omitted fields in older API clients preserve existing content.
+Textareas grow up to a bounded height and then scroll within the shared dialog.
+No product size badge is invented when the size is absent. Homepage, catalog and
+detail subtitles share Arabic-first fallback. Role and conflict behavior applies
+to new content exactly as to other product fields.
 
 Create and edit open the same editor. Success closes it, returns focus to the trigger,
 refreshes the list including dependent bundle availability, and announces success.

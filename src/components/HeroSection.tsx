@@ -99,7 +99,7 @@ export default function HeroSection({ featuredProduct, isBestSeller }: { feature
                       {isBestSeller ? 'المنتج الأكثر طلباً في الأردن' : 'منتج مميز للعناية في الأردن'}
                     </span>
                     <h4 className="text-sm font-bold text-gray-900">{featuredProduct.nameAr || featuredProduct.name}</h4>
-                    <span className="text-xs text-gray-500">{featuredProduct.subtitle || featuredProduct.name}</span>
+                    <span className="text-xs text-gray-500">{featuredProduct.subtitleAr || featuredProduct.subtitle || featuredProduct.name}</span>
                   </div>
                   <div className="text-left font-black text-brand-700 text-lg">
                     {formatPrice(featuredProduct.price)}

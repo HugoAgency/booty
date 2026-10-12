@@ -56,7 +56,11 @@ async function main() {
 
     await check('home honors featured sorting and the actual product data', async () => {
       await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
-      await page.locator('#products h3').first().getByText(productB.nameAr, { exact: true }).waitFor();
+      await page.locator('#products h3').getByText(productB.nameAr, { exact: true }).waitFor();
+      const names = await page.locator('#products h3').allTextContents();
+      const featuredIndex = names.findIndex(name => name.trim() === productB.nameAr);
+      const ordinaryIndex = names.findIndex(name => name.trim() === productA.nameAr);
+      assert(featuredIndex >= 0 && ordinaryIndex > featuredIndex, 'the featured fixture precedes the ordinary fixture, including in an existing catalog');
       assert((await page.locator('#products').innerText()).includes('19.00 د.أ'));
       assert.equal(await page.locator('#instagram a').getAttribute('href'), 'https://www.instagram.com/the_booty_rebublic.jo/');
     });

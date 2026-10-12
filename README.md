@@ -335,6 +335,26 @@ server before running `npm run build`; both commands use `.next`.
 
 ## 11. Cross-page Data Consistency Audit
 
+### Editable usage, ingredients and subtitles
+
+In **لوحة الإدارة ← المنتجات والمخزون ← تعديل**, use **تفاصيل صفحة المنتج**
+to edit **طريقة الاستخدام** and **المكونات الفعالة** in Arabic and English.
+The same fields are available when creating a product or bundle. The description
+continues to populate **المزايا والمفعول**. Both subtitle fields are also editable
+and appear consistently on the homepage, catalog and product page.
+
+Arabic content is preferred; English is the fallback. Usage/ingredients are optional
+plain text with preserved line breaks and a 5000-character limit per language.
+Clearing a field removes its saved content. If both languages are empty, the product
+tab explicitly says the details have not been added and refers to packaging guidance.
+Existing product data is not seeded or replaced. ADMIN and SUPER_ADMIN can save;
+SUPPORT remains read-only. Conflict detection and failed-save draft recovery apply.
+
+This adds four nullable Product columns (`howToUse`, `howToUseAr`, `ingredients`,
+`ingredientsAr`). Run `npm run db:push` in development. The existing Vercel
+`build:vercel` and Docker schema-sync workflows apply the additive columns before
+startup without accepting data loss.
+
 See [the route-by-route audit and verification results](docs/all-pages-audit.md)
 for the storefront, checkout, login and all administration tabs. Saved carts now
 reconcile current product names, prices and stock before purchase. Checkout rejects
@@ -350,8 +370,9 @@ export PLAYWRIGHT_MODULE_PATH=/tmp/booty-browser/node_modules/playwright
 node tests/browser/bundles.cjs
 node tests/browser/shipping.cjs
 node tests/browser/all-pages.cjs
+node tests/browser/product-content.cjs
 ```
 
-The 2026-10-12 audit passed 87 Vitest tests and 40 browser checks, plus production
+The 2026-10-12 audit and product-content follow-up passed 94 Vitest tests and 50 browser checks, plus production
 build and TypeScript checks. These are local results; the managed network blocked
 direct verification of the public Vercel deployment.
