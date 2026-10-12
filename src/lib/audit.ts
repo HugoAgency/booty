@@ -39,13 +39,8 @@ export async function logAuditEvent(params: AuditEventParams): Promise<void> {
 }
 
 export async function getRecentAuditLogs(limit: number = 50) {
-  try {
-    return await prisma.adminAuditLog.findMany({
+    return prisma.adminAuditLog.findMany({
       take: limit,
       orderBy: { createdAt: 'desc' },
     });
-  } catch (err) {
-    console.error('Failed to retrieve audit logs:', err);
-    return [];
-  }
 }

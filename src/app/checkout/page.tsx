@@ -8,6 +8,8 @@ import { useCart } from '@/context/CartContext';
 import { useShipping } from '@/context/ShippingContext';
 import ShippingInfo from '@/components/ShippingInfo';
 import { CheckoutPayloadSchema } from '@/lib/validations';
+import { reconcileCart, cartSubtotal } from '@/lib/cart';
+import CartStatus from '@/components/CartStatus';
 import { formatPrice } from '@/lib/currency';
 import {
   ShieldCheck,
@@ -25,7 +27,7 @@ import {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, subtotal, totalCount, clearCart } = useCart();
+  const { items, subtotal, totalCount, clearCart, isReady, refreshCatalog } = useCart();
 
   // Form State
   const [customerName, setCustomerName] = useState('');
@@ -46,7 +48,7 @@ export default function CheckoutPage() {
     setIdempotencyKey(`checkout_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
   }, []);
 
-  const shippingCalc = shippingRules && !shippingLoading ? calculateShippingFee(subtotal, city, shippingRules) : null;
+  const shippingCalc = isReady && shippingRules && !shippingLoading ? calculateShippingFee(subtotal, city, shippingRules) : null;
   const finalTotalAmount = shippingCalc ? Number((subtotal + shippingCalc.fee).toFixed(2)) : null;
 
   const jordanCitiesList = [
@@ -69,7 +71,7 @@ export default function CheckoutPage() {
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting || shippingLoading || !shippingRules || !shippingCalc) return;
+    if (isSubmitting || !isReady || shippingLoading || !shippingRules || !shippingCalc) return;
     setErrorMessage(null);
 
     const payload = {
@@ -84,6 +86,8 @@ export default function CheckoutPage() {
           quantity: i.quantity,
         })),
         idempotencyKey,
+        expectedSubtotal: subtotal,
+        expectedShippingFee: shippingCalc.fee,
       };
 
     const parsed = CheckoutPayloadSchema.safeParse(payload);
@@ -100,6 +104,14 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
 
     try {
+      const currentProducts = await refreshCatalog();
+      if (!currentProducts) throw new Error('تعذر التحقق من الأسعار والمخزون. أعيدي المحاولة قبل إرسال الطلب.');
+      const currentItems = reconcileCart(items, currentProducts).items;
+      if (cartSubtotal(currentItems) !== subtotal || JSON.stringify(currentItems.map(item => [item.productId, item.quantity]))
+        !== JSON.stringify(items.map(item => [item.productId, item.quantity]))) {
+        setErrorMessage('تحدّثت أسعار السلة أو الكميات المتاحة. راجعي البيانات الجديدة ثم أكّدي الطلب مرة أخرى.');
+        return;
+      }
       const currentRules = await refreshShipping();
       if (!currentRules) throw new Error('تعذر التحقق من رسوم التوصيل. أعيدي المحاولة قبل إرسال الطلب.');
       if (calculateShippingFee(subtotal, city, currentRules).fee !== shippingCalc.fee) {
@@ -117,6 +129,7 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (data.code === 'QUOTE_CHANGED') await Promise.all([refreshCatalog(), refreshShipping()]);
         throw new Error(data.error || 'فشلت معالجة الطلب، يرجى مراجعة البيانات والمحاولة مجدداً');
       }
 
@@ -133,6 +146,7 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <CartStatus />
         <div className="w-20 h-20 rounded-full bg-rose-50 flex items-center justify-center text-brand-600">
           <ShoppingBag className="w-10 h-10" />
         </div>
@@ -178,6 +192,7 @@ export default function CheckoutPage() {
             <span>{errorMessage}</span>
           </div>
         )}
+        <CartStatus />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Customer Details Form */}
@@ -330,7 +345,7 @@ export default function CheckoutPage() {
               <div className="pt-4">
                 <button
                   type="submit"
-                  disabled={isSubmitting || shippingLoading || !shippingRules}
+                  disabled={isSubmitting || !isReady || shippingLoading || !shippingRules}
                   className={`w-full py-4 px-6 rounded-2xl font-black text-base text-white flex items-center justify-center gap-2 shadow-xl transition-all ${
                     isSubmitting
                       ? 'bg-gray-400 cursor-wait'

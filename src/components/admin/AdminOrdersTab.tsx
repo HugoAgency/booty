@@ -17,84 +17,73 @@ import {
 } from 'lucide-react';
 import { formatPrice } from '@/lib/currency';
 import { OrderDetail, OrderStatusType } from '@/types';
+import { useRemoteData } from '@/hooks/useRemoteData';
+import Modal from '@/components/ui/Modal';
 
 export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
-  const [orders, setOrders] = useState<OrderDetail[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const { data, loading: isLoading, error: readError, refresh } = useRemoteData<{ orders: OrderDetail[] }>(`/api/admin/orders?${query}`, 'تعذر تحميل الطلبات');
+  const orders = data?.orders ?? [];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const detail = useRemoteData<{ order: OrderDetail }>(selectedOrderId ? `/api/admin/orders/${selectedOrderId}` : null, 'تعذر تحميل تفاصيل الطلب');
+  const selectedOrder = detail.data?.order ?? null;
+  const [error, setError] = useState<string | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const fetchOrders = async () => {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (statusFilter) params.set('status', statusFilter);
-      if (startDate) params.set('startDate', startDate);
-      if (endDate) params.set('endDate', endDate);
-
-      const res = await fetch(`/api/admin/orders?${params.toString()}`);
-      const data = await res.json();
-      if (data.success) {
-        setOrders(data.orders);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+  const fetchOrders = (override: Partial<{ search: string; status: string; startDate: string; endDate: string }> = {}) => {
+    const values = { search, status: statusFilter, startDate, endDate, ...override };
+    const params = new URLSearchParams();
+    Object.entries(values).forEach(([key, value]) => { if (value) params.set(key, value); });
+    setError(null);
+    const next = params.toString();
+    if (next === query) void refresh(); else setQuery(next);
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, [statusFilter]);
-
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatusType) => {
+    if (updatingOrderId) return;
+    setUpdatingOrderId(orderId);
+    setError(null);
     try {
-      const res = await fetch(`/api/admin/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+      const response = await fetch(`/api/admin/orders/${orderId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }),
       });
-      const data = await res.json();
-      if (data.success) {
-        setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-        );
-        if (selectedOrder?.id === orderId) {
-          setSelectedOrder((prev) => (prev ? { ...prev, status: newStatus } : null));
-        }
-        setMessage(`تم تحديث حالة الطلب إلى "${newStatus}" بنجاح`);
-        setTimeout(() => setMessage(null), 3000);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || 'تعذر حفظ حالة الطلب');
+      await refresh();
+      if (selectedOrderId === orderId) await detail.refresh();
+      setMessage('تم حفظ حالة الطلب وتحديث القائمة');
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'تعذر حفظ الحالة؛ أعد المحاولة'); }
+    finally { setUpdatingOrderId(null); }
   };
 
   const handleExportExcel = async () => {
+    if (isExporting) return;
     setIsExporting(true);
+    setError(null);
     try {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (statusFilter) params.set('status', statusFilter);
-      if (startDate) params.set('startDate', startDate);
-      if (endDate) params.set('endDate', endDate);
-
-      const downloadUrl = `/api/admin/orders/export?${params.toString()}`;
-      window.location.href = downloadUrl;
-      setMessage('جاري تحميل ملف Excel...');
-      setTimeout(() => setMessage(null), 4000);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsExporting(false);
-    }
+      const response = await fetch(`/api/admin/orders/export?${query}`, { cache: 'no-store' });
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || 'تعذر تصدير الطلبات');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'TBR_Orders.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setMessage('تم تنزيل ملف الطلبات بحسب التصفية المعروضة');
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'تعذر التصدير؛ أعد المحاولة'); }
+    finally { setIsExporting(false); }
   };
 
   const statusBadge = (status: OrderStatusType) => {
@@ -134,11 +123,14 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
     <div className="space-y-6">
       {/* Top Banner Alert */}
       {message && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center justify-between">
+        <div role="status" className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center justify-between">
           <span>{message}</span>
         </div>
       )}
 
+      {(error || readError) && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        <p>{error || readError}</p><button type="button" onClick={() => void refresh()} className="mt-2 font-bold underline hover:text-brand-700">إعادة المحاولة</button>
+      </div>}
       {/* Filter & Action Bar */}
       <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs space-y-4">
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
@@ -149,7 +141,7 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchOrders()}
+              onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && fetchOrders()}
               placeholder="بحث برقم الطلب، اسم العميل، الهاتف، المدينة..."
               className="w-full pr-10 pl-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20"
             />
@@ -159,7 +151,8 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
           <div className="flex items-center gap-2">
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              aria-label="تصفية حالة الطلبات"
+              onChange={(e) => { setStatusFilter(e.target.value); fetchOrders({ status: e.target.value }); }}
               className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700"
             >
               <option value="">جميع الحالات</option>
@@ -170,7 +163,7 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
             </select>
 
             <button
-              onClick={fetchOrders}
+              onClick={() => fetchOrders()}
               className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition"
               title="تحديث"
             >
@@ -199,6 +192,7 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
             <input
               type="date"
               value={startDate}
+              aria-label="من تاريخ"
               onChange={(e) => setStartDate(e.target.value)}
               className="px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs"
             />
@@ -208,12 +202,13 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
             <input
               type="date"
               value={endDate}
+              aria-label="إلى تاريخ"
               onChange={(e) => setEndDate(e.target.value)}
               className="px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs"
             />
           </div>
           <button
-            onClick={fetchOrders}
+            onClick={() => fetchOrders()}
             className="px-3 py-1 bg-brand-soft text-brand-700 font-bold rounded-lg hover:bg-brand-100 transition"
           >
             تطبيق الفلترة
@@ -223,7 +218,7 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
               onClick={() => {
                 setStartDate('');
                 setEndDate('');
-                fetchOrders();
+                fetchOrders({ startDate: '', endDate: '' });
               }}
               className="text-gray-400 hover:text-gray-600"
             >
@@ -240,7 +235,7 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
             <RefreshCw className="w-6 h-6 animate-spin mx-auto text-brand-600" />
             <p className="text-xs">جاري تحميل الطلبات...</p>
           </div>
-        ) : orders.length === 0 ? (
+        ) : readError ? <p className="p-8 text-gray-600">تعذر عرض الطلبات الحالية؛ أعد المحاولة.</p> : orders.length === 0 ? (
           <div className="p-12 text-center text-gray-400 space-y-2">
             <p className="text-base font-bold text-gray-700">لا توجد طلبات مطابقة</p>
             <p className="text-xs">جربي تعديل خيارات البحث أو التصفية</p>
@@ -268,7 +263,7 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
                       {o.orderNumber}
                     </td>
                     <td className="p-3.5 text-gray-500 whitespace-nowrap">
-                      {new Date(o.createdAt).toLocaleString('ar-JO', {
+                      {new Date(o.createdAt).toLocaleString('ar-JO', { timeZone: 'Asia/Amman',
                         month: 'numeric',
                         day: 'numeric',
                         hour: '2-digit',
@@ -289,6 +284,8 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
                     <td className="p-3.5 whitespace-nowrap">
                       <select
                         value={o.status}
+                        aria-label={`حالة الطلب ${o.orderNumber}`}
+                        disabled={Boolean(updatingOrderId)}
                         onChange={(e) =>
                           handleUpdateStatus(o.id, e.target.value as OrderStatusType)
                         }
@@ -302,7 +299,7 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
                     </td>
                     <td className="p-3.5 text-center whitespace-nowrap">
                       <button
-                        onClick={() => setSelectedOrder(o)}
+                        onClick={() => setSelectedOrderId(o.id)}
                         className="px-3 py-1 bg-gray-100 hover:bg-brand-50 hover:text-brand-700 text-gray-700 rounded-lg text-xs font-bold transition flex items-center gap-1 mx-auto"
                       >
                         <Eye className="w-3.5 h-3.5" />
@@ -318,24 +315,11 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
       </div>
 
       {/* Order Detail Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-2xs flex items-center justify-center p-4">
-          <div className="bg-white max-w-2xl w-full rounded-3xl p-6 shadow-2xl max-h-[90vh] overflow-y-auto space-y-6">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-              <div>
-                <span className="text-xs text-gray-400">تفاصيل الطلب:</span>
-                <h3 className="text-xl font-black text-brand-700 font-mono">
-                  {selectedOrder.orderNumber}
-                </h3>
-              </div>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="p-2 text-gray-400 hover:text-gray-700 rounded-full hover:bg-gray-100"
-              >
-                ✕
-              </button>
-            </div>
-
+      {selectedOrderId && (
+        <Modal title={selectedOrder ? `تفاصيل الطلب ${selectedOrder.orderNumber}` : 'تفاصيل الطلب'} onClose={() => setSelectedOrderId(null)}>
+          {detail.loading ? <p role="status" className="p-6">جارٍ تحميل تفاصيل الطلب الحالية…</p> : detail.error ?
+            <div role="alert"><p>{detail.error}</p><button type="button" onClick={() => void detail.refresh()} className="mt-3 font-bold underline hover:text-brand-700">إعادة المحاولة</button></div> : selectedOrder && <div className="space-y-6">
+            <div className="flex items-center gap-3 text-sm">الحالة الحالية: {statusBadge(selectedOrder.status)}</div>
             {/* Customer Information */}
             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-2xl text-xs space-y-1">
               <div>
@@ -398,6 +382,10 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
             </div>
 
             {/* Totals */}
+            <div className="border-t border-gray-100 pt-3 space-y-2 text-sm">
+              <div className="flex justify-between"><span>مجموع المنتجات في الطلب:</span><span>{formatPrice(selectedOrder.subtotal)}</span></div>
+              <div className="flex justify-between"><span>رسوم التوصيل المحفوظة للطلب:</span><span>{formatPrice(selectedOrder.shippingFee)}</span></div>
+            </div>
             <div className="border-t border-gray-100 pt-3 flex justify-between items-center text-sm">
               <span className="font-bold text-gray-700">المبلغ الإجمالي النهائي:</span>
               <span className="text-xl font-black text-brand-600">
@@ -407,14 +395,14 @@ export default function AdminOrdersTab({ userRole }: { userRole?: string }) {
 
             <div className="flex justify-end gap-3 pt-2">
               <button
-                onClick={() => setSelectedOrder(null)}
+                onClick={() => setSelectedOrderId(null)}
                 className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs"
               >
                 إغلاق النافذة
               </button>
             </div>
-          </div>
-        </div>
+          </div>}
+        </Modal>
       )}
     </div>
   );

@@ -15,7 +15,7 @@ export default async function AdminPage() {
     <AdminDashboardClient
       user={{
         username: session.username,
-        name: session.username === 'admin' ? 'مدير النظام الرئيسي' : session.username,
+        name: session.name || session.username,
         role: session.role,
       }}
     />

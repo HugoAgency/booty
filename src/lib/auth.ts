@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { prisma } from './prisma';
 
 const DEFAULT_SECRET = 'tbr-secure-super-jwt-secret-key-booty-2026-republic';
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || DEFAULT_SECRET);
@@ -9,6 +10,7 @@ export interface AdminTokenPayload {
   adminId: string;
   username: string;
   role: string;
+  name?: string;
 }
 
 export async function createAdminToken(payload: AdminTokenPayload): Promise<string> {
@@ -35,7 +37,15 @@ export async function getAdminSession(): Promise<AdminTokenPayload | null> {
     const cookieStore = cookies();
     const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
     if (!token) return null;
-    return await verifyAdminToken(token);
+    const identity = await verifyAdminToken(token);
+    if (!identity?.adminId) return null;
+    const user = await prisma.adminUser.findUnique({
+      where: { id: identity.adminId },
+      select: { id: true, username: true, name: true, role: true, isActive: true },
+    });
+    if (!user || !user.isActive || user.username !== identity.username
+      || !['SUPER_ADMIN', 'ADMIN', 'SUPPORT'].includes(user.role)) return null;
+    return { adminId: user.id, username: user.username, name: user.name, role: user.role };
   } catch {
     return null;
   }

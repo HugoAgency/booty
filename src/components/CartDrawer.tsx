@@ -7,6 +7,7 @@ import { X, Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight } from 'luci
 import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/currency';
 import ShippingInfo from './ShippingInfo';
+import CartStatus from './CartStatus';
 
 export default function CartDrawer() {
   const { items, isCartOpen, setIsCartOpen, removeItem, updateQuantity, subtotal, totalCount } = useCart();
@@ -42,6 +43,7 @@ export default function CartDrawer() {
 
           {/* Drawer Content */}
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <CartStatus />
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center py-12 space-y-4">
                 <div className="w-20 h-20 rounded-full bg-rose-50 flex items-center justify-center text-brand-400">

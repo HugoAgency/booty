@@ -12,6 +12,9 @@ describe('Bundle availability and shared inventory', () => {
     expect(getAvailableStock(bundle)).toBe(2);
     expect(getAvailableStock(first)).toBe(5);
   });
+  it.each([0, -1, NaN, Infinity])('refuses invalid database prices before accepting an order (%s)', price => {
+    expect(() => calculateOrderItems([{ productId: first.id, quantity: 1 }], [{ ...first, price }])).toThrow('سعر المنتج غير صالح');
+  });
   it('makes empty, incomplete, inactive and nested bundles unavailable', () => {
     expect(getAvailableStock({ ...bundle, bundleItems: [] })).toBe(0);
     expect(getAvailableStock({ ...bundle, bundleItems: [bundle.bundleItems[0]] })).toBe(0);

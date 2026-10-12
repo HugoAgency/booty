@@ -28,15 +28,8 @@ export async function middleware(req: NextRequest) {
   const isLoginPage = pathname === '/admin/login';
   const isLoginApi = pathname === '/api/admin/login';
 
-  // If visiting login page while already authenticated, redirect to admin dashboard
-  if (isLoginPage && token) {
-    const payload = await verifyToken(token);
-    if (payload) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/admin';
-      return NextResponse.redirect(url);
-    }
-  }
+  // The login page checks the current database account on the server.
+  // A signed token alone may belong to a deactivated or removed account.
 
   // Guard API admin routes (except login)
   if (isApiAdmin && !isLoginApi) {

@@ -24,6 +24,10 @@ describe('Current shipping settings and customer messages', () => {
     db.findUnique.mockRejectedValue(new Error('database unavailable'));
     await expect(getShippingRules()).rejects.toThrow('database unavailable');
   });
+  it('refuses corrupt database delivery fees instead of applying them to checkout', async () => {
+    db.findUnique.mockResolvedValue({ ...rules, ammanFee: -5 });
+    await expect(getShippingRules()).rejects.toThrow();
+  });
   it('shows saved city rates and qualifies free shipping at the exact saved threshold', () => {
     expect(getShippingMessage(rules, 35)).toBe('توصيل مجاني للطلبات بقيمة 88.00 د.أ أو أكثر');
     expect(getShippingMessage(rules, 88)).toBe('هذا الطلب مؤهل للتوصيل المجاني');

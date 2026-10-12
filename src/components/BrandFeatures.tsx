@@ -1,28 +1,13 @@
 import React from 'react';
-import { Award, Feather, ShieldCheck, HeartPulse, CheckCircle2 } from 'lucide-react';
+import { Award, Feather, ShieldCheck, Truck } from 'lucide-react';
+import ShippingInfo from './ShippingInfo';
 
 export default function BrandFeatures() {
   const features = [
-    {
-      icon: Feather,
-      title: 'تركيبات فائقة اللطف والأمان',
-      description: 'خالية من المواد الضارة والبارابين والكبريتات القاسية، آمنة ومختبرة للمناطق الأكثر حساسية.',
-    },
-    {
-      icon: Award,
-      title: 'مركبات ببتيدات متطورة',
-      description: 'مدعمة بأحدث تقنيات الببتيدات النشطة التي تحفز مرونة الجلد وتساعد في تقليل مظهر السيلوليت.',
-    },
-    {
-      icon: ShieldCheck,
-      title: 'نتائج مثبتة وملموسة',
-      description: 'تركيبات مصممة بتركيزات فعالة تمنحكِ توحيداً حقيقياً ونقاءً ونعومة حريرية تدوم.',
-    },
-    {
-      icon: HeartPulse,
-      title: 'ثقة وأنوثة متجددة',
-      description: 'صُممت كل قطرة لتمنحكِ شعوراً بالفخامة والراحة التامة في كل تفاصيل روتينكِ اليومي.',
-    },
+    { icon: Feather, title: 'تفاصيل تساعدكِ على الاختيار', description: 'اقرئي وصف كل منتج ومواصفاته لاختيار ما يناسب روتينكِ.' },
+    { icon: Award, title: 'أسعار بالدينار الأردني', description: 'شاهدي الأسعار الحالية، وراجعي إجمالي سلتكِ قبل تأكيد الطلب.' },
+    { icon: ShieldCheck, title: 'الدفع عند الاستلام', description: 'ادفعي نقدًا عند استلام طلبكِ، بحسب المبلغ المؤكد في الطلب.' },
+    { icon: Truck, title: 'التوصيل في الأردن', description: <ShippingInfo /> },
   ];
 
   return (
@@ -36,7 +21,7 @@ export default function BrandFeatures() {
             لماذا تختارين THE BOOTY REPUBLIC؟
           </h2>
           <p className="text-sm text-gray-600">
-            نجمع بين العلم الحديث والمستخلصات الفاخرة لتقديم حلول متخصصة تتجاوز التوقعات.
+            اختيار أسهل، وأسعار واضحة، ومعلومات توصيل من إعدادات المتجر الحالية.
           </p>
         </div>
 
@@ -50,7 +35,7 @@ export default function BrandFeatures() {
                 <f.icon className="w-6 h-6" />
               </div>
               <h3 className="text-base font-bold text-gray-900">{f.title}</h3>
-              <p className="text-xs text-gray-500 leading-relaxed">{f.description}</p>
+              <div className="text-xs text-gray-600 leading-relaxed">{f.description}</div>
             </div>
           ))}
         </div>

@@ -104,6 +104,12 @@ InstagramLink owns the follow action and a compact footer variant, with the same
 account URL and visible keyboard focus. Both open a new tab. Keep the palette and
 font stack unchanged; these are store images, not a simulated Instagram feed.
 
+Shared Modal also owns order details, user creation/reset, account-change confirmation
+and password change. Loading/error feedback stays next to the owning data or form.
+Validation follows the API schemas, retains entered values and focuses the affected
+field. Storefront content must describe actual catalog data; per-product ingredients
+and usage claims are not inferred from the brand template.
+
 ## Do's and Don'ts
 
 - Show the full bundle price and the quantity of every component.

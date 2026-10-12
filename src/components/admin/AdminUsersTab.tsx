@@ -17,10 +17,14 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AdminUserSummary, AdminRole } from '@/types';
+import { useRemoteData } from '@/hooks/useRemoteData';
+import { CreateAdminUserSchema, UpdateAdminUserSchema } from '@/lib/validations';
+import Modal from '@/components/ui/Modal';
 
 export default function AdminUsersTab({ currentUsername }: { currentUsername: string }) {
-  const [users, setUsers] = useState<AdminUserSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, loading, error: readError, refresh: fetchUsers } = useRemoteData<{ users: AdminUserSummary[] }>('/api/admin/users', 'تعذر تحميل فريق العمل');
+  const users = data?.users ?? [];
+
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -32,48 +36,35 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
   const [formRole, setFormRole] = useState<AdminRole>('ADMIN');
   const [formPassword, setFormPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [pendingUserChange, setPendingUserChange] = useState<{ user: AdminUserSummary; role?: AdminRole } | null>(null);
+  const [userChangeBusy, setUserChangeBusy] = useState(false);
+  const [invalidField, setInvalidField] = useState<string | null>(null);
 
   // Reset password modal state
   const [resetUser, setResetUser] = useState<AdminUserSummary | null>(null);
   const [newResetPassword, setNewResetPassword] = useState('');
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/admin/users');
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'فشل تحميل بيانات المستخدمين');
-      }
-      setUsers(data.users);
-    } catch (err: any) {
-      setError(err.message || 'حدث خطأ في جلب المستخدمين');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    if (isSubmitting) return;
     setError(null);
+    const parsed = CreateAdminUserSchema.safeParse({ username: formUsername, name: formName,
+      email: formEmail || undefined, role: formRole, password: formPassword });
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0]; const field = String(issue.path[0]);
+      setInvalidField(field); setError(issue.message.split('/')[0].trim());
+      document.getElementById(`create-user-${field}`)?.focus();
+      return;
+    }
+    setInvalidField(null);
+    setIsSubmitting(true);
 
     try {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: formUsername,
-          name: formName,
-          email: formEmail || undefined,
-          role: formRole,
-          password: formPassword,
-        }),
+        body: JSON.stringify(parsed.data),
       });
 
       const data = await res.json();
@@ -96,12 +87,15 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
     }
   };
 
-  const handleToggleStatus = async (user: AdminUserSummary) => {
+  const handleToggleStatus = async (user: AdminUserSummary, confirmed = false) => {
+    if (userChangeBusy) return;
     if (user.username === currentUsername) {
-      alert('لا يمكنك تعطيل حسابك النشط الحالي حفاظاً على أمان النظام');
+      setError('لا يمكنك تعطيل حسابك النشط الحالي حفاظاً على أمان النظام');
       return;
     }
 
+    if (user.isActive && !confirmed) { setPendingUserChange({ user }); return; }
+    setUserChangeBusy(true); setError(null);
     try {
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: 'PATCH',
@@ -113,22 +107,23 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
         throw new Error(data.error || 'فشل تحديث حالة المستخدم');
       }
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, isActive: !u.isActive } : u))
-      );
+      await fetchUsers();
       setSuccessMessage(`تم ${!user.isActive ? 'تفعيل' : 'تعطيل'} الحساب بنجاح`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      alert(err.message || 'حدث خطأ');
-    }
+      setError(err.message || 'حدث خطأ');
+    } finally { setUserChangeBusy(false); }
   };
 
-  const handleRoleChange = async (user: AdminUserSummary, newRole: AdminRole) => {
+  const handleRoleChange = async (user: AdminUserSummary, newRole: AdminRole, confirmed = false) => {
+    if (userChangeBusy || newRole === user.role) return;
     if (user.username === currentUsername && newRole !== 'SUPER_ADMIN') {
-      alert('لا يمكنك خفض صلاحيات حسابك النشط');
+      setError('لا يمكنك خفض صلاحيات حسابك النشط');
       return;
     }
 
+    if (!confirmed) { setPendingUserChange({ user, role: newRole }); return; }
+    setUserChangeBusy(true); setError(null);
     try {
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: 'PATCH',
@@ -140,19 +135,25 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
         throw new Error(data.error || 'فشل تغيير الصلاحية');
       }
 
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, role: newRole } : u))
-      );
+      await fetchUsers();
       setSuccessMessage('تم تحديث الدور الوظيفي بنجاح');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      alert(err.message || 'حدث خطأ');
-    }
+      setError(err.message || 'حدث خطأ');
+    } finally { setUserChangeBusy(false); }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resetUser) return;
+    if (!resetUser || isResetting) return;
+    setError(null);
+    const parsed = UpdateAdminUserSchema.safeParse({ password: newResetPassword });
+    if (!parsed.success) {
+      setInvalidField('password'); setError(parsed.error.issues[0].message.split('/')[0].trim());
+      document.getElementById('reset-user-password')?.focus(); return;
+    }
+    setInvalidField(null);
+    setIsResetting(true);
 
     try {
       const res = await fetch(`/api/admin/users/${resetUser.id}`, {
@@ -170,8 +171,8 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
       setResetUser(null);
       setNewResetPassword('');
     } catch (err: any) {
-      alert(err.message || 'حدث خطأ');
-    }
+      setError(err.message || 'حدث خطأ');
+    } finally { setIsResetting(false); }
   };
 
   const getRoleBadge = (role: string) => {
@@ -205,16 +206,16 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
   return (
     <div className="space-y-6">
       {successMessage && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
+        <div role="status" className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
           <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
           <span>{successMessage}</span>
         </div>
       )}
 
-      {error && (
-        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
+      {(error || readError) && (
+        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-          <span>{error}</span>
+          <span>{error || readError}</span>
         </div>
       )}
 
@@ -345,6 +346,7 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
                           {!isCurrent && (
                             <button
                               onClick={() => handleToggleStatus(u)}
+                              disabled={userChangeBusy}
                               className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
                                 u.isActive
                                   ? 'text-rose-700 bg-rose-50 hover:bg-rose-100'
@@ -367,27 +369,15 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
 
       {/* Create New User Modal */}
       {isNewUserOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-right">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-              <div className="flex items-center gap-2 text-gray-900 font-bold text-sm">
-                <UserPlus className="w-4 h-4 text-brand-600" />
-                <span>إضافة مشرف جديد للنظام</span>
-              </div>
-              <button
-                onClick={() => setIsNewUserOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-700 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateUser} className="p-6 space-y-4">
+        <Modal title="إضافة مشرف جديد للنظام" onClose={() => setIsNewUserOpen(false)} busy={isSubmitting}>
+            <form noValidate onSubmit={handleCreateUser} className="p-6 space-y-4">
+              {error && <p id="user-form-error" role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">اسم المشرف (الاسم الكامل)</label>
+                <label htmlFor="create-user-name" className="block text-xs font-bold text-gray-700 mb-1">اسم المشرف (الاسم الكامل)</label>
                 <input
                   type="text"
                   required
+                  id="create-user-name" aria-invalid={invalidField === 'name'} aria-describedby={invalidField === 'name' ? 'user-form-error' : undefined}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   placeholder="مثال: أحمد عبد الله"
@@ -396,10 +386,11 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">اسم الدخول (Username)</label>
+                <label htmlFor="create-user-username" className="block text-xs font-bold text-gray-700 mb-1">اسم الدخول (Username)</label>
                 <input
                   type="text"
                   required
+                  id="create-user-username" aria-invalid={invalidField === 'username'} aria-describedby={invalidField === 'username' ? 'user-form-error' : undefined}
                   value={formUsername}
                   onChange={(e) => setFormUsername(e.target.value)}
                   placeholder="مثال: ahmed_ops"
@@ -421,8 +412,9 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">الدور الوظيفي والصلاحيات</label>
+                <label htmlFor="create-user-role" className="block text-xs font-bold text-gray-700 mb-1">الدور الوظيفي والصلاحيات</label>
                 <select
+                  id="create-user-role" aria-invalid={invalidField === 'role'} aria-describedby={invalidField === 'role' ? 'user-form-error' : undefined}
                   value={formRole}
                   onChange={(e) => setFormRole(e.target.value as AdminRole)}
                   className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-700"
@@ -434,10 +426,11 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">كلمة المرور الابتدائية</label>
+                <label htmlFor="create-user-password" className="block text-xs font-bold text-gray-700 mb-1">كلمة المرور الابتدائية</label>
                 <input
                   type="password"
                   required
+                  id="create-user-password" aria-invalid={invalidField === 'password'} aria-describedby={invalidField === 'password' ? 'user-form-error' : undefined}
                   value={formPassword}
                   onChange={(e) => setFormPassword(e.target.value)}
                   placeholder="8 خانات، تشمل حروف وأرقام ورموز"
@@ -463,35 +456,22 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Reset Password Modal */}
       {resetUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-right">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-              <div className="flex items-center gap-2 text-gray-900 font-bold text-sm">
-                <Key className="w-4 h-4 text-brand-600" />
-                <span>إعادة ضبط كلمة المرور لـ @{resetUser.username}</span>
-              </div>
-              <button
-                onClick={() => setResetUser(null)}
-                className="p-1 text-gray-400 hover:text-gray-700 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleResetPassword} className="p-6 space-y-4">
+        <Modal title={`إعادة ضبط كلمة المرور لـ @${resetUser.username}`} onClose={() => setResetUser(null)} busy={isResetting}>
+            <form noValidate onSubmit={handleResetPassword} className="p-6 space-y-4">
+              {error && <p id="user-form-error" role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">
+                <label htmlFor="reset-user-password" className="block text-xs font-bold text-gray-700 mb-1">
                   كلمة المرور الجديدة
                 </label>
                 <input
                   type="password"
                   required
+                  id="reset-user-password" aria-invalid={invalidField === 'password'} aria-describedby={invalidField === 'password' ? 'user-form-error' : undefined}
                   value={newResetPassword}
                   onChange={(e) => setNewResetPassword(e.target.value)}
                   placeholder="8 خانات على الأقل مع رموز وأرقام"
@@ -503,22 +483,35 @@ export default function AdminUsersTab({ currentUsername }: { currentUsername: st
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
                 <button
                   type="button"
-                  onClick={() => setResetUser(null)}
+                  onClick={() => setResetUser(null)} disabled={isResetting}
                   className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
+                  disabled={isResetting}
                   className="px-5 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-700 rounded-xl"
                 >
                   حفظ كلمة المرور
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
+      {pendingUserChange && <Modal title={pendingUserChange.role ? 'تغيير صلاحيات المشرف؟' : 'تعطيل حساب المشرف؟'} onClose={() => setPendingUserChange(null)} busy={userChangeBusy}>
+        <p className="text-sm text-gray-700">{pendingUserChange.user.name} (@{pendingUserChange.user.username})</p>
+        <p className="mt-3 text-sm">{pendingUserChange.role ? `سيصبح الدور ${pendingUserChange.role} ويُطبّق على طلبات الوصول التالية.` : 'سيفقد هذا الحساب إمكانية الدخول واستخدام لوحة الإدارة.'}</p>
+        <div className="mt-5 flex gap-3">
+          <button type="button" data-autofocus disabled={userChangeBusy} onClick={() => setPendingUserChange(null)} className="rounded-xl bg-gray-100 px-4 py-2 font-bold hover:bg-gray-200">إلغاء</button>
+          <button type="button" disabled={userChangeBusy} onClick={async () => {
+            const change = pendingUserChange;
+            if (change.role) await handleRoleChange(change.user, change.role, true);
+            else await handleToggleStatus(change.user, true);
+            setPendingUserChange(null);
+          }} className="rounded-xl bg-brand-700 px-4 py-2 font-bold text-white hover:bg-brand-800">{pendingUserChange.role ? 'حفظ الدور الجديد' : 'تعطيل الحساب'}</button>
+        </div>
+      </Modal>}
     </div>
   );
 }

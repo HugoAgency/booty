@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CheckoutPayloadSchema } from '@/lib/validations';
-import { processOrderSubmission } from '@/lib/order-service';
+import { processOrderSubmission, OrderQuoteChangedError } from '@/lib/order-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +36,9 @@ export async function POST(req: NextRequest) {
       { status: isDuplicate ? 200 : 201 }
     );
   } catch (error: any) {
+    if (error instanceof OrderQuoteChangedError) {
+      return NextResponse.json({ success: false, code: 'QUOTE_CHANGED', error: error.message }, { status: 409 });
+    }
     console.error('Checkout processing error:', error);
     const message = error.message || 'حدث خطأ أثناء معالجة الطلب، يرجى المحاولة لاحقاً';
     return NextResponse.json(

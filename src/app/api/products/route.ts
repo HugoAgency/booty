@@ -12,7 +12,7 @@ export async function GET() {
       orderBy: { createdAt: 'asc' },
       include: bundleInclude,
     });
-    return NextResponse.json({ success: true, products: products.map(withAvailableStock) });
+    return NextResponse.json({ success: true, products: products.map(withAvailableStock) }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json(

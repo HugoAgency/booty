@@ -22,7 +22,7 @@ The platform embodies the visual identity of **THE BOOTY REPUBLIC**:
 * **Frontend:** Next.js 14+ (App Router), React 18, TypeScript, Tailwind CSS, Lucide Icons.
 * **Backend:** Next.js Server Components, Server Actions & Route Handlers (`/api/*`).
 * **Database & ORM:** PostgreSQL 16, Prisma ORM with connection pooling.
-* **Authentication:** Stateless JWT sessions via `jose`, `bcryptjs` password hashing, stored in HttpOnly, SameSite cookies.
+* **Authentication:** Signed JWT identity via `jose`, with the current active database account and role checked on each authenticated request; `bcryptjs` password hashing and HttpOnly, SameSite cookies.
 * **Validation:** Zod schemas for all client and server payloads.
 * **Excel Engine:** `exceljs` generating formatted, right-to-left (RTL) worksheets with currency/date formatting.
 * **Containerization:** Multi-stage `Dockerfile` with standalone Next.js output and `docker-compose.yml`.
@@ -75,7 +75,7 @@ The platform embodies the visual identity of **THE BOOTY REPUBLIC**:
 │   │   ├── HeroSection.tsx         # Hero banner
 │   │   ├── ProductCard.tsx         # Catalog product card
 │   │   ├── ProductCatalog.tsx      # Interactive search & filter catalog
-│   │   ├── BrandFeatures.tsx       # Formula science highlights
+│   │   ├── BrandFeatures.tsx       # Store features and current delivery policy
 │   │   ├── FaqSection.tsx          # Accordion FAQ
 │   │   └── Footer.tsx              # Brand footer & policy links
 │   ├── context/
@@ -171,7 +171,7 @@ The exported `.xlsx` workbook features:
 * **Brand Styling:** Rose header (`#FF7B98`) with white bold text and alternating row colors.
 * **15 Required Columns:**
   1. `رقم الطلب / Order ID` (e.g., `TBR-261009-A7F2`)
-  2. `تاريخ وتوقيت الطلب / Order Date` (Formatted in local Arabic format)
+  2. `تاريخ وتوقيت الطلب / Order Date` (Arabic format in Asia/Amman)
   3. `اسم العميل / Customer Name`
   4. `رقم الهاتف / Phone Number`
   5. `البريد الإلكتروني / Email`
@@ -191,7 +191,7 @@ The exported `.xlsx` workbook features:
 ## 7. Security & Reliability
 
 1. **Client Trust Mitigation:**
-   * Client cart submissions contain only `productId` and `quantity`.
+   * Submitted item lines contain only `productId` and `quantity`; expected subtotal and shipping fee protect the customer's confirmed quote.
    * Unit prices, line totals, and stock availability are strictly verified and recalculated on the server against the database.
 2. **Duplicate Order Prevention:**
    * The client generates an idempotency key during checkout.
@@ -303,7 +303,7 @@ flags to make the build pass.
 
 `npm test` runs catalog/hero and bundle validation tests. PostgreSQL integration tests
 opt in through a dedicated database whose name contains `bundle_test`; both variables
-must refer to that database. The six checkout tests and two deployment tests skip
+must refer to that database. The seven checkout tests and two deployment tests skip
 when opt-in is absent. Deployment tests use a separate temporary schema to reproduce
 the pre-bundle database, preserve existing records, verify repeated synchronization,
 and check that destructive changes are refused.
@@ -332,3 +332,26 @@ PLAYWRIGHT_MODULE_PATH=/tmp/booty-browser/node_modules/playwright \
 Set `CHROMIUM_PATH` if Chromium is not at `/usr/bin/chromium`, and
 `BUNDLE_TEST_BASE_URL` if the test server uses another address. Stop the development
 server before running `npm run build`; both commands use `.next`.
+
+## 11. Cross-page Data Consistency Audit
+
+See [the route-by-route audit and verification results](docs/all-pages-audit.md)
+for the storefront, checkout, login and all administration tabs. Saved carts now
+reconcile current product names, prices and stock before purchase. Checkout rejects
+a changed price/delivery quote before reserving stock and preserves customer inputs.
+Product and shipping edits detect newer versions rather than overwriting them.
+Admin reads show retryable failures separately from empty datasets, order list and
+Excel share Jordan calendar-day filters, and confirmation checks an actual order.
+
+Run browser suites sequentially against the same dedicated test database and app:
+
+```bash
+export PLAYWRIGHT_MODULE_PATH=/tmp/booty-browser/node_modules/playwright
+node tests/browser/bundles.cjs
+node tests/browser/shipping.cjs
+node tests/browser/all-pages.cjs
+```
+
+The 2026-10-12 audit passed 87 Vitest tests and 40 browser checks, plus production
+build and TypeScript checks. These are local results; the managed network blocked
+direct verification of the public Vercel deployment.

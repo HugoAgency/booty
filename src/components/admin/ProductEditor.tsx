@@ -71,7 +71,7 @@ export default function ProductEditor({ product, products, onClose, onSaved }: {
     setServerError('');
     try {
       const response = await fetch(product ? `/api/admin/products/${product.id}` : '/api/admin/products', {
-        method: product ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(parsed.data),
+        method: product ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...parsed.data, ...(product?.updatedAt ? { expectedUpdatedAt: new Date(product.updatedAt).toISOString() } : {}) }),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'تعذر حفظ البيانات؛ أعد المحاولة');

@@ -47,6 +47,8 @@ export const CheckoutPayloadSchema = z.object({
     .array(CheckoutItemSchema)
     .min(1, 'سلة المشتريات فارغة / Shopping cart is empty'),
   idempotencyKey: z.string().optional(),
+  expectedSubtotal: z.number().finite().nonnegative().optional(),
+  expectedShippingFee: z.number().finite().nonnegative().optional(),
 });
 
 export const AdminLoginSchema = z.object({

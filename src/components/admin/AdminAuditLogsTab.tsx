@@ -12,33 +12,13 @@ import {
   Terminal,
 } from 'lucide-react';
 import { AdminAuditLogItem } from '@/types';
+import { useRemoteData } from '@/hooks/useRemoteData';
 
 export default function AdminAuditLogsTab() {
-  const [logs, setLogs] = useState<AdminAuditLogItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error, refresh: fetchLogs } = useRemoteData<{ logs: AdminAuditLogItem[] }>(
+    '/api/admin/audit-logs?limit=100', 'تعذر تحميل سجلات التدقيق');
+  const logs = data?.logs ?? [];
   const [actionFilter, setActionFilter] = useState('');
-
-  const fetchLogs = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/admin/audit-logs?limit=100');
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'فشل جلب سجلات التدقيق');
-      }
-      setLogs(data.logs);
-    } catch (err: any) {
-      setError(err.message || 'حدث خطأ أثناء تحميل السجلات');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogs();
-  }, []);
 
   const filteredLogs = logs.filter((log) => {
     if (!actionFilter) return true;
@@ -48,14 +28,14 @@ export default function AdminAuditLogsTab() {
   });
 
   const getActionBadge = (action: string) => {
-    if (action.includes('AUTH_LOGIN_SUCCESS')) {
+    if (action.includes('LOGIN_SUCCESS')) {
       return (
         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
           تسجيل دخول ناجح
         </span>
       );
     }
-    if (action.includes('AUTH_LOGIN_FAILED')) {
+    if ((action.includes('LOGIN_FAILURE') || action.includes('LOGIN_FAILED'))) {
       return (
         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
           فشل تسجيل الدخول
@@ -100,7 +80,7 @@ export default function AdminAuditLogsTab() {
             <span>سجل التدقيق الأمني (Audit Logs)</span>
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            توثيق جميع العمليات الحساسة وتغييرات النظام ومحاولات تسجيل الدخول
+            أحدث 100 عملية مسجلة؛ يجري البحث ضمن هذه السجلات المعروضة
           </p>
         </div>
 
@@ -123,7 +103,7 @@ export default function AdminAuditLogsTab() {
       </div>
 
       {error && (
-        <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
+        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
           <span>{error}</span>
         </div>
@@ -136,7 +116,7 @@ export default function AdminAuditLogsTab() {
             <RefreshCw className="w-6 h-6 animate-spin mx-auto text-brand-600" />
             <p className="text-xs">جاري تحميل سجلات التدقيق...</p>
           </div>
-        ) : filteredLogs.length === 0 ? (
+        ) : error ? <p className="p-8 text-sm text-gray-600">تعذر عرض السجلات الحالية. استخدم زر التحديث لإعادة المحاولة.</p> : filteredLogs.length === 0 ? (
           <div className="p-12 text-center text-gray-400 space-y-2">
             <p className="text-sm font-bold text-gray-700">لا توجد سجلات مطابقة</p>
             <p className="text-xs">لم يتم تسجيل أي عمليات ضمن معايير البحث الحالية</p>

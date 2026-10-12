@@ -68,7 +68,7 @@ export default async function ProductDetailPage({ params }: { params: { slug: st
             </div>
             <div>
               <h4 className="text-sm font-bold text-gray-900">أصلي ومضمون 100%</h4>
-              <p className="text-xs text-gray-500">مكونات نقية معتمدة ومختبرة للمناطق الحساسة</p>
+              <p className="text-xs text-gray-500">راجعي وصف المنتج ومواصفاته قبل الاختيار</p>
             </div>
           </div>
 

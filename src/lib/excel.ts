@@ -118,6 +118,7 @@ export async function generateOrdersExcelWorkbook(orders: OrderExportRecord[]): 
       .join('\n');
 
     const formattedDate = new Intl.DateTimeFormat('ar-JO', {
+      timeZone: 'Asia/Amman',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

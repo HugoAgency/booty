@@ -2,10 +2,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { ProductItem } from '@/types';
+import { useCart } from '@/context/CartContext';
+import CartStatus from './CartStatus';
 import ProductCard from './ProductCard';
 import { Search, SlidersHorizontal, Sparkles } from 'lucide-react';
 
-export default function ProductCatalog({ products }: { products: ProductItem[] }) {
+export default function ProductCatalog({ products: initialProducts }: { products: ProductItem[] }) {
+  const { catalog } = useCart();
+  const products = catalog ?? initialProducts;
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc'>('featured');
@@ -38,7 +42,7 @@ export default function ProductCatalog({ products }: { products: ProductItem[] }
       .sort((a, b) => {
         if (sortBy === 'price-asc') return a.price - b.price;
         if (sortBy === 'price-desc') return b.price - a.price;
-        return 0; // featured default
+        return Number(b.isFeatured) - Number(a.isFeatured);
       });
   }, [products, selectedCategory, searchQuery, sortBy]);
 
@@ -118,6 +122,7 @@ export default function ProductCatalog({ products }: { products: ProductItem[] }
         </div>
 
         {/* Product Grid */}
+        <CartStatus />
         {filteredProducts.length === 0 ? (
           <div className="py-16 text-center space-y-3 bg-rose-50/40 rounded-2xl border border-dashed border-rose-200">
             <Search className="w-8 h-8 text-rose-300 mx-auto" />

@@ -29,7 +29,7 @@ export default function HeroSection({ featuredProduct, isBestSeller }: { feature
             </h1>
 
             <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-normal">
-              مجموعتنا العلاجية والتجميلية المبتكرة متوفرة الآن في الأردن لتمنحكِ عناية فائقة، تفتيحاً متطوراً للمناطق الحساسة، تنقية عميقة للمسام، ولوشن الببتيد المكثف لشد وصقل القوام وتنعيم السيلوليت.
+              اكتشفي منتجاتنا المتاحة للعناية بالبشرة والقوام في الأردن، واقرئي تفاصيل كل منتج لتختاري ما يناسب روتينكِ.
             </p>
 
             {/* CTAs */}
@@ -57,7 +57,7 @@ export default function HeroSection({ featuredProduct, isBestSeller }: { feature
                   <ShieldCheck className="w-4 h-4 text-emerald-500" />
                   <span>آمن ومختبر</span>
                 </div>
-                <span className="text-[11px] text-gray-500">مكونات نباتية وببتيدات</span>
+                <span className="text-[11px] text-gray-500">تفاصيل لكل منتج</span>
               </div>
 
               <div className="flex flex-col items-center lg:items-start text-center lg:text-right">

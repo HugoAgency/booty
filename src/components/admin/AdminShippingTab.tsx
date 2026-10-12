@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Truck,
   CheckCircle,
@@ -16,6 +16,7 @@ import {
 import { ShippingRules, calculateShippingFee } from '@/lib/shipping-rules';
 import { formatPrice } from '@/lib/currency';
 import { ShippingConfigSchema } from '@/lib/validations';
+import Modal from '@/components/ui/Modal';
 
 interface AdminShippingTabProps {
   userRole?: string;
@@ -26,6 +27,10 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [rulesLoaded, setRulesLoaded] = useState(false);
+  const [revision, setRevision] = useState<string | null>(null);
+  const [reloadConfirm, setReloadConfirm] = useState(false);
+  const dirty = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [invalidField, setInvalidField] = useState<string | null>(null);
@@ -58,7 +63,10 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
       setStandardFee(r.standardFee);
       setAmmanFee(r.ammanFee);
       setOuterGovernoratesFee(r.outerGovernoratesFee);
-      setEstimatedDeliveryTime(r.estimatedDeliveryTime || '1 - 3 أيام عمل');
+      setEstimatedDeliveryTime(r.estimatedDeliveryTime);
+      setRevision(data.revision ?? null);
+      setRulesLoaded(true);
+      dirty.current = false;
     } catch (err: any) {
       setError(err.message || 'حدث خطأ أثناء تحميل البيانات');
     } finally {
@@ -72,7 +80,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isReadOnly || saving) return;
+    if (isReadOnly || saving || loading || !rulesLoaded) return;
 
     setSaving(true);
     setError(null);
@@ -101,7 +109,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
       const res = await fetch('/api/admin/settings/shipping', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, expectedUpdatedAt: revision }),
       });
 
       const data = await res.json();
@@ -109,6 +117,8 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
         throw new Error(data.error || 'فشل حفظ الإعدادات');
       }
 
+      setRevision(data.rules.updatedAt);
+      dirty.current = false;
       setMessage('تم حفظ وتحديث قواعد ورسوم التوصيل بنجاح في متجر الأردن');
       window.dispatchEvent(new Event('shipping-rules-updated'));
       setTimeout(() => setMessage(null), 4000);
@@ -129,6 +139,13 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
     estimatedDeliveryTime,
   };
   const simResult = calculateShippingFee(simSubtotal, simCity, liveRules);
+
+  if (loading || !rulesLoaded) return <div className="p-8 space-y-3 text-sm">
+    {loading ? <p role="status">جارٍ تحميل إعدادات التوصيل الحالية…</p> : <div role="alert">
+      <p>{error || 'تعذر تحميل الإعدادات الحالية'}</p>
+      <button type="button" onClick={fetchRules} className="mt-3 font-bold underline hover:text-brand-700">إعادة تحميل إعدادات التوصيل</button>
+    </div>}
+  </div>;
 
   return (
     <div className="space-y-6">
@@ -160,7 +177,8 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
         </div>
 
         <button
-          onClick={fetchRules}
+          onClick={() => dirty.current ? setReloadConfirm(true) : void fetchRules()}
+          disabled={saving}
           className="p-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition"
           title="تحديث"
         >
@@ -171,7 +189,7 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Settings Form */}
         <div className="lg:col-span-7 bg-white p-6 rounded-2xl border border-gray-200 shadow-2xs space-y-6">
-          <form noValidate onSubmit={handleSave} className="space-y-6">
+          <form noValidate onChangeCapture={() => { dirty.current = true; }} onSubmit={handleSave} className="space-y-6">
             {/* Global Promotion Card */}
             <div
               className={`p-4 rounded-2xl border transition-all ${
@@ -438,11 +456,18 @@ export default function AdminShippingTab({ userRole }: AdminShippingTabProps) {
               <span>ملاحظة إدارة التوصيل لمتجر الأردن</span>
             </h5>
             <p className="text-[11px] text-gray-600 leading-relaxed">
-              تتم مزامنة رسوم التوصيل المحتسبة مع قاعدة البيانات فور إتمام الطلب، ويتم تضمين تفاصيل رسوم الشحن والعنوان بالكامل عند تصدير شيت Excel لشركات الشحن والتوصيل المحلية (مثل أرامكس، بوسطة، أو المندوب المباشر).
+              تستخدم الطلبات الجديدة إعدادات التوصيل الحالية. تحتفظ الطلبات السابقة بالمبلغ الذي تأكد عند إنشائها، ويشمل ملف Excel عنوان العميلة والمبلغ المحفوظ للطلب.
             </p>
           </div>
         </div>
       </div>
+      {reloadConfirm && <Modal title="تحميل الإعدادات الحالية؟" onClose={() => setReloadConfirm(false)}>
+        <p className="text-sm text-gray-700">ستُستبدل التعديلات غير المحفوظة بالقيم الحالية من المتجر.</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="button" data-autofocus onClick={() => setReloadConfirm(false)} className="rounded-xl bg-gray-100 px-4 py-2 font-bold hover:bg-gray-200">العودة للتعديل</button>
+          <button type="button" onClick={() => { setReloadConfirm(false); void fetchRules(); }} className="rounded-xl bg-brand-700 px-4 py-2 font-bold text-white hover:bg-brand-800">تحميل القيم الحالية</button>
+        </div>
+      </Modal>}
     </div>
   );
 }

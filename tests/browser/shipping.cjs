@@ -22,6 +22,7 @@ async function main() {
   const rules = { isFreeShippingPromo: false, freeShippingThreshold: 88, standardFee: 5,
     ammanFee: 4.75, outerGovernoratesFee: 6.25, estimatedDeliveryTime: '5 - 7 أيام عمل' };
   try {
+    await db.adminUser.create({ data: { id: stamp, username: stamp, name: 'Shipping browser admin', role: 'ADMIN', passwordHash: 'unused-test-fixture' } });
     product = await db.product.create({ data: { name: stamp, nameAr: 'منتج اختبار التوصيل',
       slug: stamp, sku: stamp, price: 19.5, stock: 20, image: '/images/logo.jpg',
       description: 'Shipping browser fixture', descriptionAr: 'وصف منتج اختبار التوصيل', category: 'Testing', categoryAr: 'اختبارات' } });
@@ -153,6 +154,7 @@ async function main() {
       else await db.shippingConfig.deleteMany({ where: { id: 'default' } });
     }
     await db.adminAuditLog.deleteMany({ where: { username: stamp } });
+    await db.adminUser.deleteMany({ where: { id: stamp } });
     await db.$disconnect();
   }
 }

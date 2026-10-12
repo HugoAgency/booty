@@ -26,6 +26,7 @@ async function main() {
   const pageErrors = [];
   const checks = [];
   try {
+    await db.adminUser.create({ data: { id: stamp, username: stamp, name: 'Bundle browser admin', role: 'ADMIN', passwordHash: 'unused-test-fixture' } });
     const first = await db.product.create({ data: fixture('gel', 'جل اختبار المتصفح', 27, 8) });
     const second = await db.product.create({ data: fixture('lotion', 'لوشن اختبار المتصفح', 30, 6) });
     const baseURL = process.env.BUNDLE_TEST_BASE_URL || 'http://127.0.0.1:3100';
@@ -157,6 +158,7 @@ async function main() {
     const support = await new SignJWT({ adminId: stamp, username: stamp, role: 'SUPPORT' })
       .setProtectedHeader({ alg: 'HS256' }).setExpirationTime('10m')
       .sign(new TextEncoder().encode(process.env.JWT_SECRET || 'tbr-secure-super-jwt-secret-key-booty-2026-republic'));
+    await db.adminUser.update({ where: { id: stamp }, data: { role: 'SUPPORT' } });
     await context.addCookies([{ name: 'tbr_admin_session', value: support, url: baseURL }]);
     assert.equal((await context.request.post(`${baseURL}/api/admin/products`, { data: firstUpdate })).status(), 403);
     const supportStats = page.waitForResponse(response => response.url().endsWith('/api/admin/stats'));
@@ -172,6 +174,7 @@ async function main() {
     await browser?.close();
     await db.order.deleteMany({ where: { idempotencyKey: stamp } });
     await db.adminAuditLog.deleteMany({ where: { username: stamp } });
+    await db.adminUser.deleteMany({ where: { id: stamp } });
     const fixtures = await db.product.findMany({ where: { sku: { startsWith: stamp } }, select: { id: true } });
     await db.bundleItem.deleteMany({ where: { bundleId: { in: fixtures.map(item => item.id) } } });
     await db.product.deleteMany({ where: { sku: { startsWith: stamp } } });

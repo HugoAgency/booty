@@ -9,6 +9,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     'orders:export',
     'products:read',
     'products:write',
+    'shipping:write',
     'products:delete',
     'users:manage',
     'audit:read',
@@ -19,6 +20,7 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
     'orders:export',
     'products:read',
     'products:write',
+    'shipping:write',
     'products:delete',
   ],
   SUPPORT: [

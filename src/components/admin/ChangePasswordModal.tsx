@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { X, Lock, Key, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { ChangePasswordSchema } from '@/lib/validations';
+import Modal from '@/components/ui/Modal';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -16,6 +18,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
   const [showNew, setShowNew] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [invalidField, setInvalidField] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   if (!isOpen) return null;
@@ -24,22 +27,23 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
     e.preventDefault();
     setError(null);
 
-    if (newPassword !== confirmPassword) {
-      setError('كلمة المرور الجديدة وتأكيدها غير متطابقين');
+    if (loading) return;
+    const parsed = ChangePasswordSchema.safeParse({ currentPassword, newPassword, confirmPassword });
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const field = String(issue.path[0]);
+      setInvalidField(field); setError(issue.message.split('/')[0].trim());
+      document.getElementById(`change-${field}`)?.focus();
       return;
     }
-
-    if (newPassword.length < 8) {
-      setError('يجب ألا تقل كلمة المرور عن 8 خانات');
-      return;
-    }
+    setInvalidField(null);
 
     setLoading(true);
     try {
       const res = await fetch('/api/admin/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword }),
+        body: JSON.stringify(parsed.data),
       });
       const data = await res.json();
 
@@ -63,46 +67,32 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-gray-100 overflow-hidden text-right">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-          <div className="flex items-center gap-2 text-gray-900 font-bold text-sm">
-            <Lock className="w-4 h-4 text-brand-600" />
-            <span>تغيير كلمة المرور</span>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <Modal title="تغيير كلمة المرور" onClose={onClose} busy={loading}>
+        <form noValidate onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
+            <div id="change-password-error" role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-bold">
+            <div role="status" className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center gap-2 font-bold">
               <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
               <span>تم تغيير كلمة المرور بنجاح!</span>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+            <label htmlFor="change-currentPassword" className="block text-xs font-bold text-gray-700 mb-1.5">
               كلمة المرور الحالية
             </label>
             <div className="relative">
               <input
                 type={showCurrent ? 'text' : 'password'}
                 required
+                id="change-currentPassword" autoComplete="current-password"
+                aria-invalid={invalidField === 'currentPassword'} aria-describedby={invalidField === 'currentPassword' ? 'change-password-error' : undefined}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="أدخل كلمة المرور الحالية"
@@ -111,7 +101,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
               />
               <button
                 type="button"
-                onClick={() => setShowCurrent(!showCurrent)}
+                onClick={() => setShowCurrent(!showCurrent)} aria-label={showCurrent ? 'إخفاء كلمة المرور الحالية' : 'إظهار كلمة المرور الحالية'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -120,13 +110,15 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+            <label htmlFor="change-newPassword" className="block text-xs font-bold text-gray-700 mb-1.5">
               كلمة المرور الجديدة
             </label>
             <div className="relative">
               <input
                 type={showNew ? 'text' : 'password'}
                 required
+                id="change-newPassword" autoComplete="new-password"
+                aria-invalid={invalidField === 'newPassword'} aria-describedby={invalidField === 'newPassword' ? 'change-password-error' : undefined}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="8 خانات، تشمل أحرف وأرقام ورموز"
@@ -135,7 +127,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
               />
               <button
                 type="button"
-                onClick={() => setShowNew(!showNew)}
+                onClick={() => setShowNew(!showNew)} aria-label={showNew ? 'إخفاء كلمة المرور الجديدة' : 'إظهار كلمة المرور الجديدة'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -144,13 +136,15 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1.5">
+            <label htmlFor="change-confirmPassword" className="block text-xs font-bold text-gray-700 mb-1.5">
               تأكيد كلمة المرور الجديدة
             </label>
             <input
               type="password"
               required
-              value={confirmPassword}
+              id="change-confirmPassword" autoComplete="new-password"
+                aria-invalid={invalidField === 'confirmPassword'} aria-describedby={invalidField === 'confirmPassword' ? 'change-password-error' : undefined}
+                value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="أعد إدخال كلمة المرور الجديدة"
               className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs text-left focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -185,7 +179,6 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

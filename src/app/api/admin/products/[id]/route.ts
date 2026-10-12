@@ -26,6 +26,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.product.findUniqueOrThrow({ where: { id: params.id } });
+      const expectedUpdatedAt = body.expectedUpdatedAt ?? body.updatedAt;
+      if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== existing.updatedAt.toISOString()) {
+        throw new Error('PRODUCT_CHANGED');
+      }
       await validateBundleInput(tx, parsed.data, params.id);
       const { bundleItems, ...productData } = parsed.data;
       return tx.product.update({
@@ -48,6 +53,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json({ success: true, product: withAvailableStock(updated) });
   } catch (error: any) {
+    if (error?.message === 'PRODUCT_CHANGED') return NextResponse.json({ success: false, code: 'PRODUCT_CHANGED', error: 'تحدّثت السلعة بعد فتحها. أعد تحميل بياناتها قبل الحفظ؛ لم تُستبدل التعديلات الجديدة.' }, { status: 409 });
     if (error instanceof ProductInputError) return NextResponse.json({ success: false, error: error.message }, { status: 400 });
     if (error?.code === 'P2034') return NextResponse.json({ success: false, error: 'تم تحديث المنتجات أثناء الحفظ؛ أعد المحاولة' }, { status: 409 });
     if (error?.code === 'P2025') return NextResponse.json({ success: false, error: 'المنتج غير موجود' }, { status: 404 });

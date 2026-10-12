@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -38,17 +38,28 @@ export default function AdminDashboardClient({ user }: AdminDashboardClientProps
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'products' | 'shipping' | 'users' | 'audit'>('overview');
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const role = user.role || 'ADMIN';
   const isSuperAdmin = role === 'SUPER_ADMIN';
+  useEffect(() => {
+    if (!isSuperAdmin && (activeTab === 'users' || activeTab === 'audit')) setActiveTab('overview');
+  }, [isSuperAdmin, activeTab]);
 
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    setDashboardError(null);
     try {
-      await fetch('/api/admin/logout', { method: 'POST' });
+      const response = await fetch('/api/admin/logout', { method: 'POST' });
+      if (!response.ok) throw new Error('تعذر تسجيل الخروج. أعد المحاولة.');
       router.push('/admin/login');
       router.refresh();
     } catch (err) {
-      console.error(err);
+      setDashboardError(err instanceof Error ? err.message : 'تعذر تسجيل الخروج. أعد المحاولة.');
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -104,6 +115,7 @@ export default function AdminDashboardClient({ user }: AdminDashboardClientProps
 
             <button
               onClick={handleLogout}
+              disabled={isLoggingOut}
               className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
               title="تسجيل الخروج"
             >
@@ -194,6 +206,7 @@ export default function AdminDashboardClient({ user }: AdminDashboardClientProps
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {dashboardError && <p role="alert" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{dashboardError}</p>}
         {activeTab === 'overview' && (
           <AdminStatsTab onSelectTab={(tab) => setActiveTab(tab)} />
         )}

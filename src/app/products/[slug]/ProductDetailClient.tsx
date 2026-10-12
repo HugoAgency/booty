@@ -1,20 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ProductItem } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/currency';
 import ShippingInfo from '@/components/ShippingInfo';
-import { ShoppingBag, Check, Plus, Minus, Heart, Sparkles, Tag, CheckCircle } from 'lucide-react';
+import CartStatus from '@/components/CartStatus';
+import { ShoppingBag, Check, Plus, Minus, Heart, Sparkles, Tag, } from 'lucide-react';
 
-export default function ProductDetailClient({ product }: { product: ProductItem }) {
+export default function ProductDetailClient({ product: initialProduct }: { product: ProductItem }) {
   const router = useRouter();
-  const { addItem, isReady } = useCart();
+  const { addItem, isReady, catalog } = useCart();
+  const currentProduct = catalog?.find(item => item.id === initialProduct.id);
+  const product = currentProduct ?? initialProduct;
+  const unavailable = product.stock <= 0 || (catalog !== null && !currentProduct);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState<'benefits' | 'howTo' | 'ingredients'>('benefits');
   const [isAdded, setIsAdded] = useState(false);
+  useEffect(() => {
+    setQuantity(previous => Math.max(1, Math.min(previous, product.stock, 50)));
+  }, [product.stock]);
 
   const handleAddToCart = () => {
     addItem(product, quantity);
@@ -100,17 +107,19 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
         <div className="flex items-center gap-2 text-xs font-bold">
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-emerald-700">
-            {product.stock > 0 ? `متوفر في المخزون (${product.stock} ${product.isBundle ? 'بكج' : 'قطعة'} متاحة)` : 'نفد المخزون حاليًا'}
+            {!unavailable ? `متوفر في المخزون (${product.stock} ${product.isBundle ? 'بكج' : 'قطعة'} متاحة)` : 'نفد المخزون حاليًا'}
           </span>
         </div>
 
         {/* Quantity and Actions */}
         <div className="space-y-4 pt-2">
+          <CartStatus />
           <div className="flex items-center gap-4">
             <span className="text-sm font-bold text-gray-700">الكمية:</span>
             <div className="flex items-center border-2 border-rose-200 rounded-xl overflow-hidden bg-white shadow-2xs">
               <button
                 type="button"
+                disabled={unavailable || quantity <= 1}
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 className="p-2.5 hover:bg-rose-50 text-gray-600 hover:text-brand-600 transition"
                 aria-label="تقليل الكمية"
@@ -120,7 +129,8 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
               <span className="px-5 text-sm font-bold text-gray-900">{quantity}</span>
               <button
                 type="button"
-                onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                disabled={unavailable || quantity >= Math.min(product.stock, 50)}
+                onClick={() => setQuantity(Math.min(product.stock, quantity + 1, 50))}
                 className="p-2.5 hover:bg-rose-50 text-gray-600 hover:text-brand-600 transition"
                 aria-label="زيادة الكمية"
               >
@@ -136,7 +146,7 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={product.stock <= 0 || !isReady}
+              disabled={unavailable || !isReady}
               className={`w-full py-4 px-6 rounded-2xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                 isAdded
                   ? 'bg-emerald-600 text-white shadow-emerald-200'
@@ -159,7 +169,7 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
             <button
               type="button"
               onClick={handleBuyNow}
-              disabled={product.stock <= 0 || !isReady}
+              disabled={unavailable || !isReady}
               className="w-full py-4 px-6 rounded-2xl font-bold text-sm sm:text-base bg-brand-dark text-white hover:bg-gray-800 shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Sparkles className="w-5 h-5 text-brand-secondary" />
@@ -210,40 +220,19 @@ export default function ProductDetailClient({ product }: { product: ProductItem 
             {activeTab === 'benefits' && (
               <div className="space-y-3">
                 <p>{product.descriptionAr || product.description}</p>
-                <div className="space-y-1.5 pt-2">
-                  <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                    <CheckCircle className="w-4 h-4 text-brand-600" />
-                    <span>آمن 100% وخالٍ من المركبات الكيميائية القاسية.</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                    <CheckCircle className="w-4 h-4 text-brand-600" />
-                    <span>سريع الامتصاص بتركيبة مخملية لا تترك أي أثر دهني.</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-800 font-semibold">
-                    <CheckCircle className="w-4 h-4 text-brand-600" />
-                    <span>مناسب للاستخدام اليومي المستمر.</span>
-                  </div>
-                </div>
               </div>
             )}
 
             {activeTab === 'howTo' && (
               <div className="space-y-2">
-                <p className="font-semibold text-gray-800">إرشادات الاستخدام الموصى بها:</p>
-                <ol className="list-decimal list-inside space-y-1.5 text-gray-600 pr-2">
-                  <li>نظفي المنطقة المستهدفة جيداً وجففيها بلطف.</li>
-                  <li>ضعي كمية مناسبة من المستحضر ودلكيها بحركات دائرية حتى تمام الامتصاص.</li>
-                  <li>يُفضل استخدامه مرتين يومياً (صباحاً ومساءً) للحصول على أسرع وأفضل نتائج.</li>
-                </ol>
+                <p>تختلف طريقة الاستخدام باختلاف المنتج. راجعي الإرشادات الموضحة على العبوة قبل الاستخدام.</p>
+                {product.isBundle && <p>اتبعي تعليمات كل منتج داخل البكج على حدة.</p>}
               </div>
             )}
 
             {activeTab === 'ingredients' && (
               <div className="space-y-2">
-                <p className="font-semibold text-gray-800">مكونات نشطة مختارة بعناية فائقة:</p>
-                <p className="text-xs text-gray-500">
-                  مركبات ببتيدات متطورة (Multi-Peptide Complex)، نياسيناميد نقي (Niacinamide)، مستخلصات عشبية مهدئة، حمض الهيالورونيك المرطب، ومضادات الأكسدة الطبيعية لحماية الحاجز الجلدي.
-                </p>
+                <p>راجعي قائمة المكونات الموضحة على عبوة هذا المنتج؛ تختلف التركيبة بين المنتجات.</p>
               </div>
             )}
           </div>

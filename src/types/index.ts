@@ -75,6 +75,8 @@ export interface CheckoutPayload {
   notes?: string;
   items: OrderItemPayload[];
   idempotencyKey?: string;
+  expectedSubtotal?: number;
+  expectedShippingFee?: number;
 }
 
 export interface OrderSummaryItem {
@@ -118,7 +120,8 @@ export type AdminPermission =
   | 'products:write'
   | 'products:delete'
   | 'users:manage'
-  | 'audit:read';
+  | 'audit:read'
+  | 'shipping:write';
 
 export interface AdminUserSummary {
   id: string;

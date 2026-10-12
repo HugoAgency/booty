@@ -1,29 +1,38 @@
 import React from 'react';
 import Link from 'next/link';
-import { CheckCircle2, PackageCheck, ShoppingBag, PhoneCall, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, PackageCheck, ShoppingBag, PhoneCall, XCircle } from 'lucide-react';
+import { prisma } from '@/lib/prisma';
+import { notFound } from 'next/navigation';
 
-export default function OrderSuccessPage({
+export const dynamic = 'force-dynamic';
+
+export default async function OrderSuccessPage({
   searchParams,
 }: {
   searchParams: { orderNumber?: string };
 }) {
-  const orderNumber = searchParams.orderNumber || 'TBR-PENDING';
+  const orderNumber = searchParams.orderNumber;
+  if (typeof orderNumber !== 'string' || !orderNumber.trim() || orderNumber.length > 80) notFound();
+  const order = await prisma.order.findUnique({ where: { orderNumber }, select: { orderNumber: true, status: true } });
+  if (!order) notFound();
+  const titles = { NEW: 'تم استلام طلبكِ بنجاح!', PROCESSING: 'طلبكِ قيد المعالجة', COMPLETED: 'طلبكِ مكتمل', CANCELLED: 'هذا الطلب ملغي' };
+  const StateIcon = order.status === 'CANCELLED' ? XCircle : CheckCircle2;
 
   return (
     <div className="bg-rose-50/30 py-16 min-h-[75vh] flex items-center justify-center">
       <div className="max-w-xl mx-auto px-4 w-full">
         <div className="bg-white p-8 sm:p-10 rounded-3xl border border-rose-100 shadow-xl text-center space-y-6">
           {/* Animated checkmark icon */}
-          <div className="w-20 h-20 rounded-full bg-emerald-50 border-4 border-emerald-100 flex items-center justify-center text-emerald-600 mx-auto">
-            <CheckCircle2 className="w-12 h-12" />
+          <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center mx-auto ${order.status === 'CANCELLED' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
+            <StateIcon className="w-12 h-12" />
           </div>
 
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
-              تم استلام طلبكِ بنجاح!
+              {titles[order.status]}
             </h1>
             <p className="text-sm text-gray-500">
-              شكراً لتسوقكِ مع <span className="font-bold text-brand-600">THE BOOTY REPUBLIC</span>. نحن نجهز شحنتكِ بحب وعناية فائقة.
+              طلبكِ لدى <span className="font-bold text-brand-600">THE BOOTY REPUBLIC</span>. يمكنكِ التواصل معنا باستخدام الرقم المرجعي أدناه.
             </p>
           </div>
 
@@ -42,11 +51,11 @@ export default function OrderSuccessPage({
           <div className="space-y-3 text-right bg-gray-50/70 p-4 rounded-xl border border-gray-100 text-xs sm:text-sm text-gray-600">
             <div className="flex items-start gap-2.5">
               <PackageCheck className="w-4 h-4 text-brand-600 mt-0.5 shrink-0" />
-              <span>تم تسجيل طلبكِ في قاعدة البيانات وتجهيز الفاتورة للتجهيز والتغليف.</span>
+              <span>احتفظي بالرقم المرجعي لمتابعة هذا الطلب.</span>
             </div>
             <div className="flex items-start gap-2.5">
               <PhoneCall className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-              <span>سيتواصل معكِ مندوب الشحن هاتفياً أو عبر واتساب لتأكيد موعد التسليم الدقيق.</span>
+              <span>{order.status === 'CANCELLED' ? 'لا يجري تجهيز هذا الطلب لأنه ملغي.' : 'للاستفسار عن حالة الطلب، تواصلي مع خدمة العملاء.'}</span>
             </div>
           </div>
 

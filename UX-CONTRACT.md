@@ -1,7 +1,7 @@
 # Catalog and bundle workflow contract
 
 Visual intent is maintained in [DESIGN.md](DESIGN.md). This records the bundle
-workflow and owners; unrelated legacy screens have not been migrated by this feature.
+workflow and owners, including the cross-page data consistency audit.
 
 InstagramLink owns external account navigation in both the homepage promotion and
 the footer. Its destination comes from the owner's provided account link, recorded
@@ -24,7 +24,7 @@ Without a selected city, cart totals explicitly exclude delivery fees.
 
 | Concern | Source | UI consequence |
 |---|---|---|
-| Admin permissions | `src/lib/rbac.ts` | SUPPORT reads products; ADMIN and SUPER_ADMIN write them. |
+| Admin permissions | `src/lib/rbac.ts`, `getAdminSession` and the shipping editor's read-only SUPPORT contract | Current active database accounts supply names and roles; SUPPORT reads products and shipping settings; ADMIN and SUPER_ADMIN write them. |
 | Pricing and stock | README §7 and `src/lib/order-service.ts` | Server calculates prices and atomically reserves stock. |
 | Bundle purpose | User request: multiple products in one item | One named product, one administrator-set price and one cart/order line. |
 | Components | `ProductInputSchema` and `validateBundleInput` | Two or more different single products, integer quantities, no nested bundles. |
@@ -37,12 +37,12 @@ Without a selected city, cart totals explicitly exclude delivery fees.
 
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
-| Form | ProductEditor; AdminShippingTab; checkout form | ProductInputSchema, ShippingConfigSchema, CheckoutPayloadSchema | catalog / shipping settings / checkout | validation tests and browser create/edit/error/focus |
+| Form | ProductEditor; AdminShippingTab; checkout, login and user/password forms | API schemas in validations.ts | catalog / shipping / checkout / credentials | validation tests and browser save/error/focus |
 | Scrollbar | Global application stylesheet | DESIGN.md and globals.css | bounded component list / dialog | static audit and narrow viewport |
 | Toast | Catalog status region in AdminProductsTab | Successful catalog mutation | persistent success or retryable error | browser success/error |
 | CRUD | Product APIs and ProductEditor | ProductInputSchema, bundle-service and rbac | create / edit / activate | API and browser CRUD checks |
 | Select/Listbox | Native controls in existing admin workflows | Platform keyboard/popup behavior | native | no new select is added; bundle choices use checkboxes |
-| Date | Native date fields in existing order workflows | Platform calendar behavior | native | unchanged by bundles |
+| Date | Native order filter fields and buildOrderWhere | Asia/Amman calendar-day boundaries | native | unit and browser list/export boundary checks |
 
 ## Catalog operations
 
@@ -65,6 +65,37 @@ Cart buttons remain disabled until persisted cart state is initialized, preventi
 an early click from being overwritten by hydration. Adding an existing item refreshes
 its displayed metadata and price from the product being viewed. Checkout still owns
 final price verification. Quantities retain the server's existing 50-unit limit.
+
+CartProvider reconciles saved items with the current public catalog on navigation,
+focus, visibility/reconnect and a visible one-minute refresh. It replaces stored
+names/images/prices, clamps stock and explicitly reports removed unavailable items.
+Failed verification blocks checkout and offers retry. Catalog sorting honors
+isFeatured. Public pages refresh on focus so server-rendered hero/metadata/detail
+content does not remain behind client-side catalog updates.
+
+Checkout revalidates catalog and delivery, then sends expected subtotal/fee. The
+serializable order transaction rereads delivery settings and rejects a changed quote
+before reserving stock. Inputs survive quote conflicts; an explicit second confirmation
+uses updated totals. Invalid prices/fees cannot become orders.
+
+useRemoteData owns fresh/cancelled/timeout-bounded reads for admin metrics, products,
+orders/details, users and audit. Failures are distinct from empty datasets. Filter
+changes cancel older reads; clearing dates sends cleared parameters. List and Excel
+export use the same committed filters and Asia/Amman calendar days. Search remains
+transient within the authenticated tab, to avoid persisting customer-identifying
+queries in page URLs. Existing dataset APIs retain their full-list contract.
+
+Product and shipping editors send the version they loaded; a later database edit
+causes a conflict rather than replacing newer data. Product conflicts preserve the
+draft and require reopening current data; shipping reload confirms replacing an
+unsaved draft. Order status changes refresh the filtered list and details from the
+server. Order monetary snapshots retain the amount confirmed at creation.
+
+The confirmation page checks a real order and current status, exposing only its
+reference/status; missing references/orders do not claim success. Login redirects
+check the current database account, preventing loops after deactivation. Role and
+active-status changes take effect on the next request even for an existing JWT.
+Permission changes and account deactivation use owned confirmations.
 
 ## Data and concurrency
 

@@ -7,14 +7,15 @@ import Footer from '@/components/Footer';
 import { ShippingProvider } from '@/context/ShippingContext';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://thebootyrepublic.vercel.app'),
   title: 'THE BOOTY REPUBLIC | العلامة الفاخرة للعناية بالقوام والبشرة',
-  description: 'المتجر الرسمي لعلامة THE BOOTY REPUBLIC. مستحضرات متقدمة لتفتيح المناطق الحساسة، تنقية البشرة، وشد وصقل القوام بالببتيدات.',
+  description: 'المتجر الرسمي لعلامة THE BOOTY REPUBLIC في الأردن للعناية بالبشرة والقوام. اطلعي على المنتجات والأسعار ومعلومات التوصيل الحالية.',
   icons: {
     icon: '/images/logo.jpg',
   },
   openGraph: {
     title: 'THE BOOTY REPUBLIC | فاخرة ومصممة لجمالكِ',
-    description: 'تسوقي أفضل تركيبات العناية المتطورة بالقوام والمناطق الحساسة مع شحن سريع ودفع عند الاستلام.',
+    description: 'اكتشفي منتجات العناية بالبشرة والقوام في الأردن، وراجعي تفاصيلها قبل الطلب والدفع عند الاستلام.',
     images: ['/images/logo.jpg'],
   },
 };

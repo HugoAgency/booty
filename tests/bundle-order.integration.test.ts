@@ -106,4 +106,11 @@ run('Bundle checkout with PostgreSQL', () => {
       bundleItems: [{ productId: newComponent.id, quantity: 1 }, { productId: secondId, quantity: 1 }],
     }, firstId))).rejects.toThrow('بكجات أخرى');
   });
+  it('rejects changed prices or delivery fees without creating an order or reserving stock', async () => {
+    const request = payload([{ productId: firstId, quantity: 1 }]);
+    await expect(processOrderSubmission({ ...request, expectedSubtotal: 1 })).rejects.toThrow('تحدّثت الأسعار');
+    await expect(processOrderSubmission({ ...request, expectedShippingFee: 999 })).rejects.toThrow('تحدّثت الأسعار');
+    expect(await prisma.order.count({ where: { idempotencyKey: request.idempotencyKey } })).toBe(0);
+    expect((await prisma.product.findUniqueOrThrow({ where: { id: firstId } })).stock).toBe(5);
+  });
 });

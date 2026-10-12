@@ -8,10 +8,12 @@ import { ProductItem } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/currency';
 
-export default function ProductCard({ product }: { product: ProductItem }) {
-  const { addItem, items, isReady } = useCart();
+export default function ProductCard({ product: initialProduct }: { product: ProductItem }) {
+  const { addItem, items, isReady, catalog } = useCart();
+  const product = catalog?.find(item => item.id === initialProduct.id) ?? initialProduct;
+  const unavailable = catalog !== null && !catalog.some(item => item.id === initialProduct.id);
   const cartItem = items.find((i) => i.productId === product.id);
-  const isOutOfStock = product.stock <= 0;
+  const isOutOfStock = unavailable || product.stock <= 0;
 
   return (
     <div className="group relative bg-white rounded-2xl border border-rose-100 shadow-sm hover:shadow-xl hover:border-brand-200 transition-all duration-300 flex flex-col overflow-hidden">
@@ -104,7 +106,7 @@ export default function ProductCard({ product }: { product: ProductItem }) {
             ) : (
               <>
                 <ShoppingBag className="w-4 h-4" />
-                <span>أضف للسلة</span>
+                <span>{isOutOfStock ? 'غير متاح حاليًا' : 'أضف للسلة'}</span>
               </>
             )}
           </button>

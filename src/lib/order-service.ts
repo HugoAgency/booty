@@ -27,9 +27,12 @@ export function generateOrderNumber(): string {
   return `TBR-${dateStr}-${randomChars}`;
 }
 
+export class OrderQuoteChangedError extends Error {
+  constructor() { super('تحدّثت الأسعار أو رسوم التوصيل. راجعي المبلغ الحالي ثم أكّدي الطلب مرة أخرى.'); }
+}
+
 export async function processOrderSubmission(payload: CheckoutPayload) {
   const { customerName, customerPhone, customerEmail, city, address, notes, items, idempotencyKey } = payload;
-  const shippingRules = await getShippingRules();
 
   // Catalog reads, order creation and conditional component decrements are one unit.
   // Serializable isolation also prevents edits to bundle membership during checkout.
@@ -45,7 +48,12 @@ export async function processOrderSubmission(payload: CheckoutPayload) {
           include: bundleInclude,
         });
         const { lineItems, inventory, subtotal } = calculateOrderItems(items, products);
+        const shippingRules = await getShippingRules(tx);
         const shippingFee = calculateShippingFee(subtotal, city, shippingRules).fee;
+        if ((payload.expectedSubtotal !== undefined && payload.expectedSubtotal !== subtotal)
+          || (payload.expectedShippingFee !== undefined && payload.expectedShippingFee !== shippingFee)) {
+          throw new OrderQuoteChangedError();
+        }
 
         // Aggregate shared ingredients across bundles and standalone products first.
         // Guard each decrement so no concurrent order can make stock negative.

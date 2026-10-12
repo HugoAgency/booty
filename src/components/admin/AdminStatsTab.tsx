@@ -4,39 +4,27 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingBag, DollarSign, Clock, Package, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { formatPrice } from '@/lib/currency';
 import { OrderDetail } from '@/types';
+import { useRemoteData } from '@/hooks/useRemoteData';
 
 export default function AdminStatsTab({
   onSelectTab,
 }: {
   onSelectTab: (tab: 'orders' | 'products') => void;
 }) {
-  const [stats, setStats] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data, loading: isLoading, error, refresh } = useRemoteData<{
+    stats: { totalRevenue: number; totalOrders: number; pendingOrders: number; totalProducts: number; recentOrders: OrderDetail[] };
+  }>('/api/admin/stats', 'تعذر تحميل لوحة المؤشرات');
+  const stats = data?.stats;
 
-  useEffect(() => {
-    fetch('/api/admin/stats')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          setStats(data.stats);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
-  }, []);
-
-  if (isLoading || !stats) {
-    return (
-      <div className="p-12 text-center text-gray-400">
-        <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-        <p className="text-xs">جاري تحميل لوحة المؤشرات...</p>
-      </div>
-    );
-  }
+  if (isLoading) return <div role="status" className="p-12 text-center text-gray-500">جارٍ تحميل لوحة المؤشرات…</div>;
+  if (error || !stats) return <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-rose-800">
+    <p>{error || 'تعذر تحميل لوحة المؤشرات'}</p>
+    <button type="button" onClick={() => void refresh()} className="mt-3 font-bold underline hover:text-brand-700">إعادة المحاولة</button>
+  </div>;
 
   const statCards = [
     {
-      title: 'إجمالي المبيعات المؤكدة',
+      title: 'إجمالي قيمة الطلبات غير الملغاة',
       value: formatPrice(stats.totalRevenue),
       icon: DollarSign,
       color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
@@ -127,7 +115,7 @@ export default function AdminStatsTab({
                 <div className="text-left space-y-0.5">
                   <div className="font-bold text-gray-900">{formatPrice(order.totalAmount)}</div>
                   <span className="text-[10px] text-gray-400">
-                    {new Date(order.createdAt).toLocaleDateString('ar-JO')}
+                    {new Date(order.createdAt).toLocaleDateString('ar-JO', { timeZone: 'Asia/Amman' })}
                   </span>
                 </div>
               </div>

@@ -6,34 +6,19 @@ import { Plus, Edit, RefreshCw } from 'lucide-react';
 import { ProductItem } from '@/types';
 import { formatPrice } from '@/lib/currency';
 import ProductEditor from './ProductEditor';
+import { useRemoteData } from '@/hooks/useRemoteData';
 
 export default function AdminProductsTab({ userRole }: { userRole?: string }) {
-  const [products, setProducts] = useState<ProductItem[]>([]);
+  const { data, loading: isLoading, error: readError, refresh } = useRemoteData<{ products: ProductItem[] }>('/api/admin/products', 'تعذر تحميل المنتجات');
+  const products = data?.products ?? [];
   const isReadOnly = userRole === 'SUPPORT';
-  const [isLoading, setIsLoading] = useState(true);
+
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/admin/products');
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحميل المنتجات');
-      setProducts(data.products);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تعذر الاتصال؛ أعد المحاولة');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const fetchProducts = async () => { setError(null); return refresh(); };
 
   const openEditModal = (p: ProductItem) => setEditingProduct(p);
 
@@ -46,6 +31,7 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحديث الحالة');
+      window.dispatchEvent(new Event('catalog-updated'));
       await fetchProducts();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر الاتصال؛ أعد المحاولة');
@@ -62,6 +48,7 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.error || 'تعذر تحديث المخزون');
+      window.dispatchEvent(new Event('catalog-updated'));
       await fetchProducts();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'تعذر الاتصال؛ أعد المحاولة');
@@ -70,8 +57,8 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
 
   return (
     <div className="space-y-6">
-      {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
-        <span>{error}</span><button type="button" onClick={fetchProducts} className="rounded-lg px-3 py-2 font-bold hover:bg-rose-100">إعادة المحاولة</button>
+      {(error || readError) && <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        <span>{error || readError}</span><button type="button" onClick={fetchProducts} className="rounded-lg px-3 py-2 font-bold hover:bg-rose-100">إعادة المحاولة</button>
       </div>}
       {message && (
         <div role="status" aria-live="polite" className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold">
@@ -212,6 +199,7 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
         <ProductEditor product={editingProduct} products={products}
           onClose={() => { setEditingProduct(null); setIsNewModalOpen(false); }}
           onSaved={() => {
+            window.dispatchEvent(new Event('catalog-updated'));
             setMessage('تم حفظ بيانات السلعة بنجاح');
             setEditingProduct(null); setIsNewModalOpen(false);
             fetchProducts();

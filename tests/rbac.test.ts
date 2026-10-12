@@ -13,6 +13,7 @@ describe('Role-Based Access Control (RBAC)', () => {
       'products:delete',
       'users:manage',
       'audit:read',
+      'shipping:write',
     ];
 
     allPermissions.forEach((perm) => {
@@ -27,6 +28,7 @@ describe('Role-Based Access Control (RBAC)', () => {
     expect(hasPermission('ADMIN', 'products:read')).toBe(true);
     expect(hasPermission('ADMIN', 'products:write')).toBe(true);
     expect(hasPermission('ADMIN', 'products:delete')).toBe(true);
+    expect(hasPermission('ADMIN', 'shipping:write')).toBe(true);
 
     // Restricted
     expect(hasPermission('ADMIN', 'users:manage')).toBe(false);
@@ -45,6 +47,7 @@ describe('Role-Based Access Control (RBAC)', () => {
     expect(hasPermission('SUPPORT', 'products:delete')).toBe(false);
     expect(hasPermission('SUPPORT', 'users:manage')).toBe(false);
     expect(hasPermission('SUPPORT', 'audit:read')).toBe(false);
+    expect(hasPermission('SUPPORT', 'shipping:write')).toBe(false);
   });
 
   it('denies all permissions for unknown or invalid roles', () => {

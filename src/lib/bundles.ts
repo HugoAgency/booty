@@ -46,6 +46,7 @@ export function calculateOrderItems(items: OrderItemPayload[], products: OrderPr
   const lineItems = Array.from(quantities).map(([id, quantity]) => {
     const product = productMap.get(id);
     if (!product) throw new Error('بعض المنتجات غير متوفرة أو لم يتم العثور عليها');
+    if (!Number.isFinite(product.price) || product.price <= 0) throw new Error('سعر المنتج غير صالح؛ تعذر تأكيد الطلب');
     if (getAvailableStock(product) < quantity) {
       throw new Error(`الكمية المطلوبة من "${product.nameAr || product.name}" غير متوفرة في المخزون`);
     }
