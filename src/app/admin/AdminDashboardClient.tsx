@@ -26,6 +26,9 @@ import AdminAuditLogsTab from '@/components/admin/AdminAuditLogsTab';
 import ChangePasswordModal from '@/components/admin/ChangePasswordModal';
 import AnimatedLogo from '@/components/AnimatedLogo';
 
+// Owner-requested UI visibility only; account/audit APIs and permissions remain available.
+const SHOW_INTERNAL_ADMIN_TABS = false;
+
 interface AdminDashboardClientProps {
   user: {
     username: string;
@@ -44,7 +47,7 @@ export default function AdminDashboardClient({ user }: AdminDashboardClientProps
   const role = user.role || 'ADMIN';
   const isSuperAdmin = role === 'SUPER_ADMIN';
   useEffect(() => {
-    if (!isSuperAdmin && (activeTab === 'users' || activeTab === 'audit')) setActiveTab('overview');
+    if ((!isSuperAdmin || !SHOW_INTERNAL_ADMIN_TABS) && (activeTab === 'users' || activeTab === 'audit')) setActiveTab('overview');
   }, [isSuperAdmin, activeTab]);
 
   const handleLogout = async () => {
@@ -174,7 +177,7 @@ export default function AdminDashboardClient({ user }: AdminDashboardClientProps
             <span>إعدادات التوصيل والرسوم</span>
           </button>
 
-          {isSuperAdmin && (
+          {isSuperAdmin && SHOW_INTERNAL_ADMIN_TABS && (
             <>
               <button
                 onClick={() => setActiveTab('users')}
@@ -213,10 +216,10 @@ export default function AdminDashboardClient({ user }: AdminDashboardClientProps
         {activeTab === 'orders' && <AdminOrdersTab userRole={role} />}
         {activeTab === 'products' && <AdminProductsTab userRole={role} />}
         {activeTab === 'shipping' && <AdminShippingTab userRole={role} />}
-        {activeTab === 'users' && isSuperAdmin && (
+        {activeTab === 'users' && isSuperAdmin && SHOW_INTERNAL_ADMIN_TABS && (
           <AdminUsersTab currentUsername={user.username} />
         )}
-        {activeTab === 'audit' && isSuperAdmin && (
+        {activeTab === 'audit' && isSuperAdmin && SHOW_INTERNAL_ADMIN_TABS && (
           <AdminAuditLogsTab />
         )}
       </main>

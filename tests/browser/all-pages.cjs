@@ -213,32 +213,24 @@ async function main() {
       await page.getByRole('alert').filter({ hasText: 'تحدّثت إعدادات التوصيل' }).waitFor();
       assert.equal((await db.shippingConfig.findUniqueOrThrow({ where: { id: 'default' } })).ammanFee, 5);
     });
-    await check('user creation validates in the dialog and reflects a real database account', async () => {
-      await page.getByRole('button', { name: 'فريق العمل والصلاحيات', exact: true }).click();
-      await page.getByRole('button', { name: 'إضافة مشرف جديد', exact: true }).click();
-      const dialog = page.getByRole('dialog', { name: 'إضافة مشرف جديد للنظام', exact: true });
-      await dialog.getByRole('button', { name: 'حفظ المشرف', exact: true }).click();
-      await dialog.getByRole('alert').waitFor();
-      assert(await dialog.locator('#create-user-username').evaluate(el => el === document.activeElement));
-      await dialog.locator('#create-user-name').fill('عضو اختبار'); await dialog.locator('#create-user-username').fill(memberUsername);
-      await dialog.locator('#create-user-password').fill(initialPassword);
-      await dialog.getByRole('button', { name: 'حفظ المشرف', exact: true }).click();
-      await dialog.waitFor({ state: 'hidden' });
+    await check('internal tabs are hidden while the authorized user API remains functional', async () => {
+      assert.equal(await page.getByRole('button', { name: 'فريق العمل والصلاحيات', exact: true }).count(), 0);
+      assert.equal(await page.getByRole('button', { name: 'سجل التدقيق الأمني', exact: true }).count(), 0);
+      assert.equal((await context.request.post(`${baseURL}/api/admin/users`, { data: {} })).status(), 400);
+      assert((await context.request.post(`${baseURL}/api/admin/users`, { data: {
+        username: memberUsername, name: 'عضو اختبار', password: initialPassword, role: 'ADMIN',
+      } })).ok());
       assert(await db.adminUser.findUnique({ where: { username: memberUsername } }));
-      await page.getByRole('row').filter({ hasText: memberUsername }).waitFor();
+      const response = await context.request.get(`${baseURL}/api/admin/users`);
+      assert(response.ok());
+      assert((await response.json()).users.some(user => user.username === memberUsername));
     });
-    await check('permission dialogs cancel safely and save the actual chosen role', async () => {
-      const row = page.getByRole('row').filter({ hasText: memberUsername });
-      await row.getByRole('combobox').selectOption('SUPPORT');
-      const confirmation = page.getByRole('dialog', { name: 'تغيير صلاحيات المشرف؟', exact: true });
-      await confirmation.waitFor();
-      assert(await confirmation.getByRole('button', { name: 'إلغاء', exact: true }).evaluate(el => el === document.activeElement));
-      await confirmation.getByRole('button', { name: 'إلغاء', exact: true }).click();
+    await check('hiding permission controls preserves authorized role changes in the API', async () => {
+      const member = await db.adminUser.findUniqueOrThrow({ where: { username: memberUsername } });
+      assert.equal((await context.request.patch(`${baseURL}/api/admin/users/${member.id}`, { data: { role: 'INVALID' } })).status(), 400);
       assert.equal((await db.adminUser.findUniqueOrThrow({ where: { username: memberUsername } })).role, 'ADMIN');
       for (const role of ['SUPPORT', 'ADMIN']) {
-        await row.getByRole('combobox').selectOption(role);
-        await confirmation.getByRole('button', { name: 'حفظ الدور الجديد', exact: true }).click();
-        await confirmation.waitFor({ state: 'hidden' });
+        assert((await context.request.patch(`${baseURL}/api/admin/users/${member.id}`, { data: { role } })).ok());
         assert.equal((await db.adminUser.findUniqueOrThrow({ where: { username: memberUsername } })).role, role);
       }
     });
@@ -283,15 +275,12 @@ async function main() {
       await memberPage.getByRole('heading', { name: 'تسجيل دخول المسؤول', exact: true }).waitFor();
       assert(new URL(memberPage.url()).pathname.endsWith('/admin/login'));
     });
-    await check('audit read failures recover without claiming an empty history', async () => {
-      await page.route('**/api/admin/audit-logs*', route => route.fulfill({ status: 500, contentType: 'application/json', body: '{"success":false,"error":"فشل مؤقت للسجل"}' }));
-      await page.getByRole('button', { name: 'سجل التدقيق الأمني', exact: true }).click();
-      await page.getByRole('alert').filter({ hasText: 'فشل مؤقت للسجل' }).waitFor();
-      assert.equal(await page.getByText('لا توجد سجلات مطابقة', { exact: true }).count(), 0);
-      await page.unroute('**/api/admin/audit-logs*');
-      await page.getByTitle('تحديث', { exact: true }).click();
-      await page.getByPlaceholder('بحث في الإجراء، المستخدم، التفاصيل...').fill(username);
-      await page.getByRole('cell', { name: `@${username}`, exact: true }).first().waitFor();
+    await check('audit logging and authorized reads continue with the audit tab hidden', async () => {
+      const response = await context.request.get(`${baseURL}/api/admin/audit-logs`);
+      assert(response.ok());
+      assert((await response.json()).logs.some(log => log.username === username && log.action === 'USER_CREATED'));
+      assert.equal((await memberContext.request.get(`${baseURL}/api/admin/audit-logs`)).status(), 401);
+      assert.equal(await page.getByRole('button', { name: 'سجل التدقيق الأمني', exact: true }).count(), 0);
     });
     await check('public product, cart and login screens remain usable on a phone', async () => {
       await page.setViewportSize({ width: 375, height: 812 });

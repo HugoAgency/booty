@@ -3,6 +3,11 @@
 Visual intent is maintained in [DESIGN.md](DESIGN.md). This records the bundle
 workflow and owners, including the cross-page data consistency audit.
 
+The owner requested hiding team/permissions and security-audit tabs from the dashboard
+UI. SHOW_INTERNAL_ADMIN_TABS controls both navigation and panel visibility for all
+roles. Existing components, account/audit APIs, data and server permissions remain
+available; hiding the interface does not disable audit logging or change authorization.
+
 InstagramLink owns external account navigation in both the homepage promotion and
 the footer. Its destination comes from the owner's provided account link, recorded
 once in `src/lib/social.ts`. It preserves the account spelling, opens a new tab with

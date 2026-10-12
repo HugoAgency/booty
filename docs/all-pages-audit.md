@@ -118,3 +118,15 @@ bundles **9**, all-pages **20**, shipping **11** — **50 checks** total. The ho
 fixtures now verify popularity and featured ordering without assuming an empty
 catalog. Narrow editor/detail screenshots were inspected. The working changes passed
 `git diff --check` and the browser scripts passed Node syntax checks.
+
+## Follow-up: internal dashboard tabs hidden
+
+At the owner's request, team/permissions and security-audit navigation and panels
+are hidden for every role, including SUPER_ADMIN. This is interface visibility only:
+components, account/audit endpoints, authorization, stored records and audit writes
+are retained. The maintained all-pages browser suite now checks hidden navigation
+and exercises the retained user/role/audit APIs directly; the earlier dialog and
+audit-search UI results above describe the interface before it was hidden.
+
+Verification for this follow-up passed: production build, TypeScript, 94 automated
+tests in 17 suites, 20 all-pages browser checks, strict UI audit and diff checks.
