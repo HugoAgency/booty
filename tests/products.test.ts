@@ -50,7 +50,7 @@ describe('Actual catalog data and homepage card', () => {
     const html = renderToStaticMarkup(React.createElement(HeroSection, { featuredProduct: product, isBestSeller: true }));
     expect(html).toContain(product.nameAr);
     expect(html).toContain(product.subtitle);
-    expect(html).toContain(encodeURIComponent(product.image));
+    expect(html).toContain(product.image);
     expect(html).toContain('41.50');
     expect(html).toContain(`/products/${product.slug}`);
     expect(html).not.toContain('35.00');

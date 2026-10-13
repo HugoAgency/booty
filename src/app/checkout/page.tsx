@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import ProductImage from '@/components/ProductImage';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/context/CartContext';
@@ -382,7 +382,7 @@ export default function CheckoutPage() {
               {items.map((item) => (
                 <div key={item.productId} className="pt-3 first:pt-0 flex items-center gap-3">
                   <div className="relative w-16 h-16 rounded-xl bg-rose-50 border border-rose-100 shrink-0 overflow-hidden">
-                    <Image
+                    <ProductImage compact
                       src={item.image}
                       alt={item.nameAr || item.name}
                       fill

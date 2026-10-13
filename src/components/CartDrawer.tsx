@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import ProductImage from '@/components/ProductImage';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { formatPrice } from '@/lib/currency';
@@ -66,7 +66,7 @@ export default function CartDrawer() {
                   <div key={item.productId} className="pt-4 first:pt-0 flex gap-4 items-center">
                     {/* Thumbnail */}
                     <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-rose-50 border border-rose-100 shrink-0">
-                      <Image
+                      <ProductImage compact
                         src={item.image}
                         alt={item.nameAr || item.name}
                         fill

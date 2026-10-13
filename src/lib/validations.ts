@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isProductImageSource, normalizeProductImageSource } from './product-images';
 
 export const CheckoutItemSchema = z.object({
   productId: z.string().min(1, 'معرّف المنتج مطلوب / Product ID is required'),
@@ -73,7 +74,9 @@ export const ProductInputSchema = z.object({
   price: z.number().positive('أدخل سعرًا أكبر من صفر'),
   compareAtPrice: z.number().positive().optional().nullable(),
   sku: z.string().trim().min(2, 'أدخل كود السلعة (حرفان على الأقل)'),
-  image: z.string().trim().min(1, 'أدخل مسار الصورة أو رابطها'),
+  image: z.string().trim().min(1, 'أدخل مسار الصورة أو رابطها').max(4096, 'رابط الصورة طويل جدًا')
+    .transform(normalizeProductImageSource)
+    .refine(isProductImageSource, 'أدخل مسارًا يبدأ بـ / أو رابط صورة كاملًا يبدأ بـ https:// أو http://'),
   size: z.string().trim().nullish(),
   category: z.string().trim().min(2, 'أدخل القسم بالإنجليزية'),
   categoryAr: z.string().trim().min(2, 'أدخل القسم بالعربية'),

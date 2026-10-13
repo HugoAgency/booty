@@ -185,7 +185,11 @@ async function main() {
     });
     await check('clearing date filters clears request parameters and Excel exports the displayed dataset', async () => {
       await page.getByLabel('تصفية حالة الطلبات').selectOption('');
-      await page.getByLabel('من تاريخ').fill('2026-10-13'); await page.getByLabel('إلى تاريخ').fill('2026-10-13');
+      // A fixed date becomes today's checkout date eventually; use a future day
+      // for the empty-range check while retaining fixed Jordan-boundary fixtures.
+      const future = new Date(); future.setUTCFullYear(future.getUTCFullYear() + 1);
+      const emptyDate = future.toISOString().slice(0, 10);
+      await page.getByLabel('من تاريخ').fill(emptyDate); await page.getByLabel('إلى تاريخ').fill(emptyDate);
       await page.getByRole('button', { name: 'تطبيق الفلترة', exact: true }).click();
       await page.getByText('لا توجد طلبات مطابقة', { exact: true }).waitFor();
       const cleared = page.waitForResponse(response => response.url().includes('/api/admin/orders?') && !new URL(response.url()).searchParams.has('startDate'));

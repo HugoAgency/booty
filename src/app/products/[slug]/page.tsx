@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+import { isProductImageSource, normalizeProductImageSource } from '@/lib/product-images';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getProductBySlug, getActiveProducts } from '@/lib/products';
@@ -11,11 +11,12 @@ import ShippingInfo from '@/components/ShippingInfo';
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const product = await getProductBySlug(params.slug);
   if (!product) return { title: 'المنتج غير موجود | THE BOOTY REPUBLIC' };
+  const imageSource = normalizeProductImageSource(product.image);
   return {
     title: `${product.nameAr || product.name} | THE BOOTY REPUBLIC`,
     description: product.descriptionAr || product.description,
     openGraph: {
-      images: [product.image],
+      images: isProductImageSource(imageSource) ? [imageSource] : [],
     },
   };
 }

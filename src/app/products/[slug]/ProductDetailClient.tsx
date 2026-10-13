@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import ProductImage from '@/components/ProductImage';
 import { useRouter } from 'next/navigation';
 import { ProductItem } from '@/types';
 import { useCart } from '@/context/CartContext';
@@ -39,7 +39,7 @@ export default function ProductDetailClient({ product: initialProduct }: { produ
       {/* Product Image Section */}
       <div className="lg:col-span-6 space-y-4">
         <div className="relative aspect-square w-full rounded-3xl bg-rose-50/50 border border-rose-100 overflow-hidden shadow-sm flex items-center justify-center p-8 group">
-          <Image
+          <ProductImage
             src={product.image}
             alt={product.nameAr || product.name}
             fill
@@ -96,7 +96,7 @@ export default function ProductDetailClient({ product: initialProduct }: { produ
           <h2 id="bundle-contents-title" className="font-bold text-brand-dark">محتويات البكج</h2>
           <ul className="space-y-2 text-sm text-gray-700">
             {product.bundleItems?.map(item => <li key={item.productId} className="flex items-center gap-3">
-              <Image src={item.product.image} alt="" width={40} height={40} className="rounded-lg object-contain" />
+              <ProductImage src={item.product.image} alt={item.product.nameAr || item.product.name} width={40} height={40} compact className="rounded-lg object-contain" />
               <span>{item.quantity} × {item.product.nameAr || item.product.name}</span>
             </li>)}
           </ul>

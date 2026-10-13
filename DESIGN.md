@@ -110,6 +110,11 @@ Validation follows the API schemas, retains entered values and focuses the affec
 field. Storefront content must describe actual catalog data; per-product ingredients
 and usage claims are not inferred from the brand template.
 
+ProductImage owns product media in the storefront, cart, checkout, admin and social
+collage. Keep reserved image frames; a missing picture uses a quiet ImageOff icon
+and explicit text, with a compact icon variant for thumbnails. ProductEditor uses
+the same owner in a small rose preview panel with adjacent loading/error feedback.
+
 ## Do's and Don'ts
 
 - Show the full bundle price and the quantity of every component.

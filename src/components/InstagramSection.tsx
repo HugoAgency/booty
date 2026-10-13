@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import ProductImage from '@/components/ProductImage';
 import { Instagram } from 'lucide-react';
 import { ProductItem } from '@/types';
 import { INSTAGRAM_ACCOUNT } from '@/lib/social';
@@ -45,7 +46,7 @@ export default function InstagramSection({ products }: { products: ProductItem[]
             {gallery.length > 0 ? <div className="flex items-center justify-center gap-2 pb-6 sm:gap-4" aria-label="منتجات من متجرنا">
               {gallery.map((product, index) => <div key={product.id} className={`min-w-0 max-w-48 flex-1 rounded-xl border border-white bg-white p-1.5 shadow-md sm:p-2 ${tilts[index]}`}>
                 <div className="relative aspect-square overflow-hidden rounded-lg bg-white">
-                  <Image src={product.image} alt={product.nameAr || product.name} fill sizes="(min-width: 1024px) 160px, (min-width: 640px) 200px, 100px" className="object-contain" />
+                  <ProductImage src={product.image} alt={product.nameAr || product.name} fill sizes="(min-width: 1024px) 160px, (min-width: 640px) 200px, 100px" className="object-contain" />
                 </div>
                 <div className="mt-2 flex items-center justify-between px-1 pb-1" aria-hidden="true">
                   <span className="h-1 w-6 rounded-full bg-brand-200" />

@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+import ProductImage from '@/components/ProductImage';
 import Link from 'next/link';
 import { ShieldCheck, Truck, ArrowLeft, Heart } from 'lucide-react';
 import AnimatedLogo from './AnimatedLogo';
@@ -84,7 +84,7 @@ export default function HeroSection({ featuredProduct, isBestSeller }: { feature
             <div className="relative mx-auto max-w-md lg:max-w-none">
               <div className="relative bg-gradient-to-tr from-rose-100 to-white p-6 rounded-3xl border border-rose-200/80 shadow-2xl overflow-hidden">
                 <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center p-4">
-                  <Image
+                  <ProductImage
                     src={featuredProduct.image}
                     alt={featuredProduct.nameAr || featuredProduct.name}
                     fill

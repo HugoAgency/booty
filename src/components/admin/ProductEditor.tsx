@@ -7,6 +7,8 @@ import { ProductInputSchema } from '@/lib/validations';
 import { getAvailableStock } from '@/lib/bundles';
 import { formatPrice } from '@/lib/currency';
 import Modal from '@/components/ui/Modal';
+import ProductImage from '@/components/ProductImage';
+import { isProductImageSource, normalizeProductImageSource } from '@/lib/product-images';
 
 type ProductInput = z.infer<typeof ProductInputSchema>;
 
@@ -29,6 +31,15 @@ export default function ProductEditor({ product, products, onClose, onSaved }: {
     bundleItems: (product?.bundleItems || []).map(({ productId, quantity }) => ({ productId, quantity })),
   }));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [previewImage, setPreviewImage] = useState(form.image);
+  const [previewAttempt, setPreviewAttempt] = useState(0);
+  const [previewStatus, setPreviewStatus] = useState<{ source: string; state: 'loaded' | 'error' } | null>(null);
+  const previewSource = normalizeProductImageSource(previewImage);
+  const imageState = previewStatus?.source === previewSource ? previewStatus.state : 'loading';
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setPreviewImage(form.image), 300);
+    return () => window.clearTimeout(timeout);
+  }, [form.image]);
   const [serverError, setServerError] = useState('');
   const [saving, setSaving] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
@@ -94,7 +105,7 @@ export default function ProductEditor({ product, products, onClose, onSaved }: {
         onChange={event => update(key, (type === 'number'
           ? key === 'compareAtPrice' && !event.target.value ? null : Number(event.target.value)
           : event.target.value) as never)}
-        aria-invalid={Boolean(errors[key])} aria-describedby={errors[key] ? `product-${key}-error` : undefined}
+        aria-invalid={Boolean(errors[key])} aria-describedby={[key === 'image' ? 'product-image-help' : '', errors[key] ? `product-${key}-error` : ''].filter(Boolean).join(' ') || undefined}
         className="w-full rounded-xl border border-gray-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-600 disabled:opacity-60" />
       {errors[key] && <p id={`product-${key}-error`} className="mt-1 text-rose-700">{errors[key]}</p>}
     </div>
@@ -123,6 +134,26 @@ export default function ProductEditor({ product, products, onClose, onSaved }: {
             {field('size', 'الحجم / السعة (اختياري)')}
             {!form.isBundle && field('stock', 'المخزون الحالي', 'number')}
           </div>
+          <section aria-labelledby="product-image-preview-title" className="flex flex-col gap-4 rounded-2xl border border-rose-100 bg-brand-soft p-4 sm:flex-row">
+            <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-xl border border-rose-100 bg-white">
+              <ProductImage key={previewAttempt} src={previewImage} alt="معاينة صورة السلعة" fill compact className="object-contain"
+                onLoad={() => setPreviewStatus({ source: previewSource, state: 'loaded' })}
+                onError={() => setPreviewStatus({ source: previewSource, state: 'error' })} />
+            </div>
+            <div className="min-w-0 space-y-2">
+              <h3 id="product-image-preview-title" className="font-bold text-brand-dark">معاينة صورة المنتج أو البكج</h3>
+              <p id="product-image-help" className="text-xs leading-relaxed text-gray-600">استخدم رابط صورة عامًا أو مسارًا محليًا. لصور Google Drive، اجعل الوصول «أي شخص لديه الرابط»؛ تُحوّل روابط الملفات إلى رابط عرض للصورة تلقائيًا. الروابط الخاصة أو صفحات تسجيل الدخول لا تُعرض كصور.</p>
+              <p aria-live="polite" className={`min-h-5 text-xs ${imageState === 'error' ? 'text-rose-700' : 'text-gray-600'}`}>
+                {!isProductImageSource(previewSource) ? 'أدخل رابط الصورة لعرض المعاينة.'
+                  : imageState === 'loaded' ? 'تم تحميل معاينة الصورة.'
+                  : imageState === 'error' ? 'تعذر تحميل الصورة. تحقق من أن الرابط عام ويعرض ملف صورة، ثم أعد المحاولة.'
+                  : 'جارٍ تحميل معاينة الصورة…'}
+              </p>
+              {isProductImageSource(previewSource) && imageState === 'error' && <button type="button" disabled={saving}
+                onClick={() => { setPreviewStatus(null); setPreviewAttempt(attempt => attempt + 1); }}
+                className="rounded-lg px-2 py-1 text-xs font-bold text-brand-600 underline hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 disabled:opacity-60">إعادة تحميل معاينة الصورة</button>}
+            </div>
+          </section>
           {form.isBundle && <fieldset disabled={saving} tabIndex={-1} aria-invalid={Boolean(errors.bundleItems)}
             aria-describedby="bundle-help bundle-error" className="space-y-3 rounded-2xl border border-rose-200 p-4">
             <legend className="px-1 font-bold text-brand-dark">محتويات البكج</legend>

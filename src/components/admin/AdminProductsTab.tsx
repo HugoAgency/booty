@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import ProductImage from '@/components/ProductImage';
 import { Plus, Edit, RefreshCw } from 'lucide-react';
 import { ProductItem } from '@/types';
 import { formatPrice } from '@/lib/currency';
@@ -117,7 +117,7 @@ export default function AdminProductsTab({ userRole }: { userRole?: string }) {
                     <td className="p-3.5">
                       <div className="flex items-center gap-3">
                         <div className="relative w-12 h-12 rounded-lg bg-rose-50 border border-rose-100 overflow-hidden shrink-0">
-                          <Image src={p.image} alt={p.name} fill className="object-cover" />
+                          <ProductImage src={p.image} alt={p.name} fill compact className="object-cover" />
                         </div>
                         <div>
                           <p className="font-bold text-gray-900">{p.nameAr || p.name}</p>

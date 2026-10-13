@@ -3,6 +3,17 @@
 Visual intent is maintained in [DESIGN.md](DESIGN.md). This records the bundle
 workflow and owners, including the cross-page data consistency audit.
 
+ProductImage owns catalog, hero, detail/component, cart, checkout, admin-list and
+Instagram product images. normalizeProductImageSource resolves Drive file links at
+display time (including existing records), metadata generation and API save time.
+Resource keys are preserved. Local paths and other full http/https image URLs retain
+their value; unsupported sources get field errors or an honest unavailable-image
+placeholder. Images load directly in the browser, without a server fetch proxy.
+Private Drive files still require owner sharing changes. ProductEditor debounces its
+preview, retains the entered link and reports loading/success/failure with retry.
+Preview failure is advisory: it does not block unrelated edits during a provider
+outage. Existing data, permission, conflict and dirty-draft behavior is retained.
+
 The owner requested hiding team/permissions and security-audit tabs from the dashboard
 UI. SHOW_INTERNAL_ADMIN_TABS controls both navigation and panel visibility for all
 roles. Existing components, account/audit APIs, data and server permissions remain

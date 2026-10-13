@@ -335,6 +335,10 @@ server before running `npm run build`; both commands use `.next`.
 
 ## 11. Cross-page Data Consistency Audit
 
+For Google Drive product/bundle pictures, see [image links, sharing and preview](docs/product-images.md).
+The editor now previews images and normalizes Drive file links. Existing saved links
+use the same resolver across the storefront, admin, cart, checkout and metadata.
+
 For `/api/admin/stats` failures, see [statistics diagnosis and the verified read fix](docs/statistics-read-fix.md).
 The overview fetches only recent-order summary fields; diagnostic responses distinguish
 missing schema from unavailable connections without exposing raw database errors.
