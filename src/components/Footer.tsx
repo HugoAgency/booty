@@ -96,7 +96,7 @@ export default function Footer() {
               </p>
               <p className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-brand-primary shrink-0" />
-                <span>jordan@thebootyrepublic.com</span>
+                <a href="mailto:hugoagencyjo@gmail.com" dir="ltr" className="hover:text-brand-300 transition-colors">hugoagencyjo@gmail.com</a>
               </p>
             </div>
           </div>
