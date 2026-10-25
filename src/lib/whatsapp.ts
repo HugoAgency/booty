@@ -1,6 +1,5 @@
 import type { Prisma } from '@prisma/client';
 import { formatPrice } from './currency';
-import { readBundleContents } from './bundles';
 
 // Used only by the server-side checkout endpoint.
 const WHATSAPP_ORDER_NUMBER = '962790385333';
@@ -10,13 +9,9 @@ type SavedOrder = Prisma.OrderGetPayload<{ include: { items: true } }>;
 export function buildOrderWhatsAppUrl(order: SavedOrder): string {
   const products = order.items.map((item, index) => [
     `${index + 1}. ${item.productNameAr || item.productName}`,
-    `كود المنتج: ${item.productSku || 'غير مذكور'}`,
     `الكمية: ${item.quantity}`,
     `سعر الوحدة: ${formatPrice(item.unitPrice)}`,
     `إجمالي الصنف: ${formatPrice(item.lineTotal)}`,
-    ...readBundleContents(item.bundleContents).map(component =>
-      `محتويات البكج: ${component.productNameAr || component.productName} [${component.productSku}] × ${component.quantity * item.quantity}`
-    ),
   ].join('\n')).join('\n\n');
 
   const message = [

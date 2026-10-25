@@ -135,7 +135,8 @@ After checkout saves an order, CheckoutOrderConfirmation uses the shared native
 Modal to explain that the customer must press Send inside WhatsApp. Navigation to
 the merchant happens only after an explicit action. Closing the notice keeps the
 saved reference and reopen link available, even after the cart clears. The server
-generates the message from saved customer, price, delivery and bundle snapshots;
+generates the message from saved customer, order line, price and delivery snapshots.
+Product codes and bundle contents are omitted from the WhatsApp message;
 opening WhatsApp never submits another order or claims message delivery.
 
 ## Data and concurrency

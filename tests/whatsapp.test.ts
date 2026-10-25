@@ -18,8 +18,11 @@ describe('Saved-order WhatsApp message', () => {
 
   it('includes multiple line items, quantities, saved prices, and the English name fallback', () => {
     const message = new URL(buildOrderWhatsAppUrl(savedOrder)).searchParams.get('text')!;
-    expect(message).toContain('1. لوشن الجسم\nكود المنتج: LOTION-01\nالكمية: 2\nسعر الوحدة: 12.50 د.أ\nإجمالي الصنف: 25.00 د.أ');
-    expect(message).toContain('2. Cleanser & Care\nكود المنتج: CLEAN-02\nالكمية: 1\nسعر الوحدة: 8.00 د.أ\nإجمالي الصنف: 8.00 د.أ');
+    expect(message).toContain('1. لوشن الجسم\nالكمية: 2\nسعر الوحدة: 12.50 د.أ\nإجمالي الصنف: 25.00 د.أ');
+    expect(message).toContain('2. Cleanser & Care\nالكمية: 1\nسعر الوحدة: 8.00 د.أ\nإجمالي الصنف: 8.00 د.أ');
+    expect(message).not.toContain('كود المنتج');
+    expect(message).not.toContain('LOTION-01');
+    expect(message).not.toContain('CLEAN-02');
   });
 
   it('round-trips Arabic, newlines, emoji, plus signs, ampersands, and URL delimiters', () => {
@@ -41,16 +44,18 @@ describe('Saved-order WhatsApp message', () => {
     const message = new URL(buildOrderWhatsAppUrl(order)).searchParams.get('text')!;
     expect(message).toContain('البريد الإلكتروني: غير مذكور');
     expect(message).toContain('الملاحظات: لا توجد');
-    expect(message).toContain('كود المنتج: غير مذكور');
     expect(message).toContain('رسوم التوصيل: 0.00 د.أ');
   });
 
-  it('includes historical bundle contents with the total quantities for fulfillment', () => {
-    const order = { ...savedOrder, items: [{ ...savedOrder.items[0], bundleContents: [{
+  it('omits product codes and bundle contents while retaining the bundle name, quantity, and prices', () => {
+    const order = { ...savedOrder, items: [{ ...savedOrder.items[0], productNameAr: 'بكج العناية', productSku: 'BUNDLE-01', bundleContents: [{
       productId: 'component-1', productName: 'Original gel', productNameAr: 'جل وقت الطلب',
       productSku: 'GEL-01', quantity: 3,
     }] }] };
     const message = new URL(buildOrderWhatsAppUrl(order)).searchParams.get('text')!;
-    expect(message).toContain('محتويات البكج: جل وقت الطلب [GEL-01] × 6');
+    expect(message).toContain('1. بكج العناية\nالكمية: 2\nسعر الوحدة: 12.50 د.أ\nإجمالي الصنف: 25.00 د.أ');
+    for (const hidden of ['كود المنتج', 'BUNDLE-01', 'محتويات البكج', 'جل وقت الطلب', 'Original gel', 'GEL-01']) {
+      expect(message).not.toContain(hidden);
+    }
   });
 });
