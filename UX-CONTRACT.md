@@ -131,6 +131,13 @@ check the current database account, preventing loops after deactivation. Role an
 active-status changes take effect on the next request even for an existing JWT.
 Permission changes and account deactivation use owned confirmations.
 
+After checkout saves an order, CheckoutOrderConfirmation uses the shared native
+Modal to explain that the customer must press Send inside WhatsApp. Navigation to
+the merchant happens only after an explicit action. Closing the notice keeps the
+saved reference and reopen link available, even after the cart clears. The server
+generates the message from saved customer, price, delivery and bundle snapshots;
+opening WhatsApp never submits another order or claims message delivery.
+
 ## Data and concurrency
 
 Bundle stock is the minimum of floor(component stock / component quantity). Shared

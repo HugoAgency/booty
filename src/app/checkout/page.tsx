@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import ProductImage from '@/components/ProductImage';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import WhatsAppIcon from '@/components/WhatsAppIcon';
+import CheckoutOrderConfirmation from '@/components/CheckoutOrderConfirmation';
+import type { CheckoutSuccessResponse } from '@/types';
 import { useCart } from '@/context/CartContext';
 import { useShipping } from '@/context/ShippingContext';
 import ShippingInfo from '@/components/ShippingInfo';
@@ -18,7 +20,6 @@ import {
   CreditCard,
   AlertCircle,
   ArrowRight,
-  CheckCircle2,
   Sparkles,
 } from 'lucide-react';
 import {
@@ -26,7 +27,6 @@ import {
 } from '@/lib/shipping-rules';
 
 export default function CheckoutPage() {
-  const router = useRouter();
   const { items, subtotal, totalCount, clearCart, isReady, refreshCatalog } = useCart();
 
   // Form State
@@ -41,12 +41,10 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [invalidField, setInvalidField] = useState<string | null>(null);
-  const [idempotencyKey, setIdempotencyKey] = useState<string>('');
+  const idempotencyKeyRef = useRef('');
+  const submittingRef = useRef(false);
+  const [savedOrder, setSavedOrder] = useState<CheckoutSuccessResponse | null>(null);
   const { rules: shippingRules, loading: shippingLoading, refresh: refreshShipping } = useShipping();
-
-  useEffect(() => {
-    setIdempotencyKey(`checkout_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`);
-  }, []);
 
   const shippingCalc = isReady && shippingRules && !shippingLoading ? calculateShippingFee(subtotal, city, shippingRules) : null;
   const finalTotalAmount = shippingCalc ? Number((subtotal + shippingCalc.fee).toFixed(2)) : null;
@@ -71,8 +69,12 @@ export default function CheckoutPage() {
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting || !isReady || shippingLoading || !shippingRules || !shippingCalc) return;
+    if (submittingRef.current || savedOrder || !isReady || shippingLoading || !shippingRules || !shippingCalc) return;
     setErrorMessage(null);
+
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = `checkout_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    }
 
     const payload = {
         customerName: customerName.trim(),
@@ -85,7 +87,7 @@ export default function CheckoutPage() {
           productId: i.productId,
           quantity: i.quantity,
         })),
-        idempotencyKey,
+        idempotencyKey: idempotencyKeyRef.current,
         expectedSubtotal: subtotal,
         expectedShippingFee: shippingCalc.fee,
       };
@@ -101,6 +103,7 @@ export default function CheckoutPage() {
     }
     setInvalidField(null);
 
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -126,22 +129,25 @@ export default function CheckoutPage() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const data: CheckoutSuccessResponse | { success: false; error?: string; code?: string } = await res.json();
 
-      if (!res.ok || !data.success) {
+      if (!data.success) {
         if (data.code === 'QUOTE_CHANGED') await Promise.all([refreshCatalog(), refreshShipping()]);
         throw new Error(data.error || 'فشلت معالجة الطلب، يرجى مراجعة البيانات والمحاولة مجدداً');
       }
+      if (!res.ok) throw new Error('فشلت معالجة الطلب، يرجى المحاولة مجدداً');
 
+      setSavedOrder(data);
       clearCart();
-      router.push(`/checkout/success?orderNumber=${encodeURIComponent(data.orderNumber)}`);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMessage(err.message || 'حدث خطأ غير متوقع أثناء إرسال الطلب');
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error ? err.message : 'حدث خطأ غير متوقع أثناء إرسال الطلب');
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
+
+  if (savedOrder) return <CheckoutOrderConfirmation order={savedOrder} />;
 
   if (items.length === 0) {
     return (
@@ -352,6 +358,7 @@ export default function CheckoutPage() {
                       : 'bg-gradient-to-r from-brand-600 via-brand-primary to-rose-600 hover:opacity-95 shadow-rose-200'
                   }`}
                 >
+                  <WhatsAppIcon className="w-5 h-5 shrink-0" />
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -359,8 +366,7 @@ export default function CheckoutPage() {
                     </div>
                   ) : (
                     <>
-                      <span>{finalTotalAmount === null ? 'بانتظار بيانات التوصيل' : `تأكيد وإرسال الطلب (${formatPrice(finalTotalAmount)})`}</span>
-                      <CheckCircle2 className="w-5 h-5" />
+                      <span>{finalTotalAmount === null ? 'بانتظار بيانات التوصيل' : `إرسال الطلب والمتابعة إلى واتساب (${formatPrice(finalTotalAmount)})`}</span>
                     </>
                   )}
                 </button>

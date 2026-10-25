@@ -83,6 +83,17 @@ export interface CheckoutPayload {
   expectedShippingFee?: number;
 }
 
+export interface CheckoutSuccessResponse {
+  success: true;
+  isDuplicate: boolean;
+  orderNumber: string;
+  orderId: string;
+  totalAmount: number;
+  subtotal: number;
+  status: OrderStatusType;
+  whatsappUrl: string;
+}
+
 export interface OrderSummaryItem {
   id: string;
   productId: string | null;

@@ -3,8 +3,8 @@
 import { useEffect, useRef, useId, ReactNode } from 'react';
 
 /** Native dialog owns focus trapping, background inertness and focus restoration. */
-export default function Modal({ title, children, onClose, busy = false }: {
-  title: string; children: ReactNode; onClose: () => void; busy?: boolean;
+export default function Modal({ title, children, onClose, busy = false, descriptionId }: {
+  title: string; children: ReactNode; onClose: () => void; busy?: boolean; descriptionId?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -15,7 +15,7 @@ export default function Modal({ title, children, onClose, busy = false }: {
     return () => dialog?.close();
   }, []);
   return (
-    <dialog ref={ref} aria-labelledby={titleId} onCancel={event => {
+    <dialog ref={ref} aria-labelledby={titleId} aria-describedby={descriptionId} onCancel={event => {
       event.preventDefault();
       if (!busy) onClose();
     }} className="w-[calc(100%_-_2rem)] max-w-2xl max-h-[90dvh] rounded-3xl border border-gray-200 p-0 shadow-2xl backdrop:bg-black/50">

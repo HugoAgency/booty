@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CheckoutPayloadSchema } from '@/lib/validations';
 import { processOrderSubmission, OrderQuoteChangedError } from '@/lib/order-service';
+import { buildOrderWhatsAppUrl } from '@/lib/whatsapp';
+import type { CheckoutSuccessResponse } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const { isDuplicate, order } = await processOrderSubmission(parseResult.data);
 
-    return NextResponse.json(
+    return NextResponse.json<CheckoutSuccessResponse>(
       {
         success: true,
         isDuplicate,
@@ -32,6 +34,7 @@ export async function POST(req: NextRequest) {
         totalAmount: order.totalAmount,
         subtotal: order.subtotal,
         status: order.status,
+        whatsappUrl: buildOrderWhatsAppUrl(order),
       },
       { status: isDuplicate ? 200 : 201 }
     );
