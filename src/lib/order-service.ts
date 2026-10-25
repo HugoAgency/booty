@@ -82,7 +82,8 @@ export async function processOrderSubmission(payload: CheckoutPayload) {
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002' && idempotencyKey) {
+        if (error.code === 'P2002' && idempotencyKey
+          && Array.isArray(error.meta?.target) && error.meta.target.includes('idempotencyKey')) {
           const existing = await prisma.order.findUnique({ where: { idempotencyKey }, include: { items: true } });
           if (existing) return { isDuplicate: true, order: existing };
         }
